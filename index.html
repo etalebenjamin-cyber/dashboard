@@ -1,0 +1,430 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Dashboard">
+  <meta name="theme-color" content="#5E5CE6">
+  <link rel="manifest" href="manifest.json">
+  <link rel="apple-touch-icon" sizes="180x180" href="icon-180.png?v=8">
+  <link rel="icon" type="image/svg+xml" href="icon.svg?v=8">
+  <link rel="stylesheet" href="style.css">
+  <title>Dashboard</title>
+</head>
+<body>
+
+<div class="app">
+
+  <!-- ══════════════════════════════════════════════════════════════════
+       SIDEBAR (gauche sur desktop, barre du bas sur mobile)
+       ══════════════════════════════════════════════════════════════ -->
+  <aside class="sidebar" id="sidebar">
+    <div class="brand">
+      <div class="brand-icon">
+        <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true">
+          <defs><linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stop-color="#7C3AED"/><stop offset="100%" stop-color="#DB2777"/>
+          </linearGradient></defs>
+          <rect width="24" height="24" rx="6" fill="url(#bg)"/>
+          <circle cx="12" cy="16" r="5" fill="#FCD34D"/>
+          <rect x="4" y="18" width="16" height="1.5" rx=".75" fill="#fff"/>
+        </svg>
+      </div>
+      <span class="brand-name">Dashboard</span>
+    </div>
+
+    <nav class="nav">
+      <button class="nav-item active" data-view="today">
+        <span class="nav-ico">◐</span>
+        <span class="nav-lbl">Aujourd'hui</span>
+      </button>
+      <button class="nav-item" data-view="habits">
+        <span class="nav-ico">◎</span>
+        <span class="nav-lbl">Habitudes</span>
+      </button>
+      <button class="nav-item" data-view="finance">
+        <span class="nav-ico">€</span>
+        <span class="nav-lbl">Finances</span>
+      </button>
+      <button class="nav-item" data-view="wellness">
+        <span class="nav-ico">♡</span>
+        <span class="nav-lbl">Bien-être</span>
+      </button>
+      <button class="nav-item" data-view="journal">
+        <span class="nav-ico">✎</span>
+        <span class="nav-lbl">Journal</span>
+      </button>
+    </nav>
+
+    <div class="sidebar-foot">
+      <div class="sync-row">
+        <div class="sync-dot" id="sync-dot" title="Sync…"></div>
+        <span class="sync-lbl" id="sync-lbl">Sync</span>
+      </div>
+    </div>
+  </aside>
+
+
+  <!-- ══════════════════════════════════════════════════════════════════
+       MAIN
+       ══════════════════════════════════════════════════════════════ -->
+  <main class="content">
+
+    <header class="topbar">
+      <div class="topbar-left">
+        <h1 class="page-title" id="page-title">Aujourd'hui</h1>
+        <div class="page-sub"  id="page-sub"></div>
+      </div>
+      <div class="topbar-right">
+        <div class="clock" id="clock"></div>
+      </div>
+    </header>
+
+
+    <!-- ─────────────────────────────────────── VIEW : AUJOURD'HUI -->
+    <section class="view active" id="view-today">
+
+      <div class="citation" id="citation"></div>
+
+      <div class="bento bento-today">
+
+        <!-- HERO — résumé du jour -->
+        <div class="cell hero">
+          <div class="hero-stats">
+            <div class="hero-stat" id="hero-tasks">
+              <div class="hero-stat-num">0/0</div>
+              <div class="hero-stat-lbl">Tâches</div>
+            </div>
+            <div class="hero-stat" id="hero-habits">
+              <div class="hero-stat-num">0/0</div>
+              <div class="hero-stat-lbl">Habitudes</div>
+            </div>
+            <div class="hero-stat" id="hero-water">
+              <div class="hero-stat-num">0</div>
+              <div class="hero-stat-lbl">Verres d'eau</div>
+            </div>
+            <div class="hero-stat" id="hero-focus">
+              <div class="hero-stat-num">0</div>
+              <div class="hero-stat-lbl">Sessions focus</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- TÂCHES — large -->
+        <div class="cell tasks-cell">
+          <div class="cell-head">
+            <h3>Tâches</h3>
+            <span class="pill" id="tasks-pill"></span>
+          </div>
+          <div class="row-input">
+            <input id="task-input" type="text" placeholder="Nouvelle tâche…" maxlength="120" autocomplete="off">
+            <button class="btn-circle btn-accent" id="btn-add-task" title="Ajouter">＋</button>
+          </div>
+          <ul id="task-list" class="item-list"></ul>
+          <button class="ghost-btn" id="btn-clear-tasks">Effacer terminées</button>
+        </div>
+
+        <!-- HABITUDES DU JOUR — medium -->
+        <div class="cell habits-today-cell">
+          <div class="cell-head">
+            <h3>Habitudes du jour</h3>
+            <button class="icon-btn" id="btn-add-habit" title="Ajouter">＋</button>
+          </div>
+          <div id="habits-today"></div>
+        </div>
+
+        <!-- POMODORO — medium -->
+        <div class="cell pom-cell">
+          <div class="cell-head">
+            <h3>Focus</h3>
+            <span class="pill pom-pill" id="pom-badge">Focus</span>
+          </div>
+          <div class="pom-ring-wrap">
+            <svg class="pom-ring" viewBox="0 0 110 110" aria-hidden="true">
+              <circle class="pom-track" cx="55" cy="55" r="46"/>
+              <circle class="pom-arc"   cx="55" cy="55" r="46" id="pom-arc"/>
+            </svg>
+            <div class="pom-overlay">
+              <div class="pom-time" id="pom-time">25:00</div>
+            </div>
+          </div>
+          <div class="pom-controls">
+            <button class="pom-btn-sec"  id="pom-reset"  title="Reset">↺</button>
+            <button class="pom-btn-main" id="pom-toggle">▶</button>
+            <button class="pom-btn-sec"  id="pom-skip"   title="Skip">⏭</button>
+          </div>
+          <div class="pom-dots" id="pom-dots"></div>
+        </div>
+
+        <!-- HUMEUR — small -->
+        <div class="cell mood-cell">
+          <div class="cell-head"><h3>Humeur</h3></div>
+          <div class="mood-emojis" id="mood-emojis"></div>
+        </div>
+
+        <!-- EAU — small -->
+        <div class="cell water-cell">
+          <div class="cell-head">
+            <h3>Eau</h3>
+            <span class="muted" id="water-lbl">0 / 8</span>
+          </div>
+          <div class="water-glasses" id="water-glasses"></div>
+        </div>
+
+        <!-- ÉNERGIE — small -->
+        <div class="cell energy-cell">
+          <div class="cell-head">
+            <h3>Énergie</h3>
+            <span class="muted" id="energy-lbl"></span>
+          </div>
+          <div class="energy-row" id="energy-buttons"></div>
+          <div class="energy-history" id="energy-history"></div>
+        </div>
+
+        <!-- ROUTINE MATIN — medium -->
+        <div class="cell routine-cell">
+          <div class="cell-head">
+            <h3>☀ Matin</h3>
+            <span class="pill" id="routine-am-pill"></span>
+          </div>
+          <ul class="routine-list" id="routine-am"></ul>
+        </div>
+
+        <!-- ROUTINE SOIR — medium -->
+        <div class="cell routine-cell">
+          <div class="cell-head">
+            <h3>☾ Soir</h3>
+            <span class="pill" id="routine-pm-pill"></span>
+          </div>
+          <ul class="routine-list" id="routine-pm"></ul>
+        </div>
+
+        <!-- CALENDRIER SEMAINE — wide -->
+        <div class="cell week-cell">
+          <div class="cell-head">
+            <h3>Cette semaine</h3>
+            <span class="muted" id="week-lbl"></span>
+          </div>
+          <div class="week-grid" id="week-grid"></div>
+        </div>
+
+        <!-- OBJECTIFS DU MOIS — medium -->
+        <div class="cell goals-cell">
+          <div class="cell-head">
+            <h3>Objectifs du mois</h3>
+            <button class="icon-btn" id="btn-add-goal" title="Ajouter">＋</button>
+          </div>
+          <div id="goals-list"></div>
+        </div>
+
+        <!-- COMPTE À REBOURS — medium -->
+        <div class="cell countdowns-cell">
+          <div class="cell-head">
+            <h3>Compte à rebours</h3>
+            <button class="icon-btn" id="btn-add-countdown" title="Ajouter">＋</button>
+          </div>
+          <div id="countdowns-list"></div>
+        </div>
+
+        <!-- INBOX / CAPTURE RAPIDE — wide -->
+        <div class="cell inbox-cell">
+          <div class="cell-head">
+            <h3>Inbox</h3>
+            <span class="muted">Capture rapide — idées, notes, à trier plus tard</span>
+          </div>
+          <div class="row-input">
+            <input id="inbox-input" type="text" placeholder="Tape une idée, n'importe quoi…" maxlength="200" autocomplete="off">
+            <button class="btn-circle btn-accent" id="btn-add-inbox" title="Capturer">＋</button>
+          </div>
+          <ul id="inbox-list" class="item-list inbox-items"></ul>
+        </div>
+
+      </div>
+    </section>
+
+
+    <!-- ─────────────────────────────────────── VIEW : HABITUDES -->
+    <section class="view" id="view-habits" hidden>
+      <div class="bento bento-habits">
+        <div class="cell wide">
+          <div class="cell-head">
+            <h3>Toutes les habitudes</h3>
+            <button class="icon-btn" id="btn-add-habit2" title="Ajouter">＋</button>
+          </div>
+          <div id="habits-list-full"></div>
+        </div>
+        <div class="cell wide">
+          <div class="cell-head"><h3>30 derniers jours</h3></div>
+          <div id="habits-month"></div>
+        </div>
+      </div>
+    </section>
+
+
+    <!-- ─────────────────────────────────────── VIEW : FINANCES -->
+    <section class="view" id="view-finance" hidden>
+      <div class="bento bento-finance">
+
+        <div class="cell hero finance-hero">
+          <div class="balance-lbl">Solde actuel</div>
+          <div class="balance-row">
+            <span class="balance-cur">€</span>
+            <input id="balance-val" type="number" step="0.01" inputmode="decimal" value="0">
+          </div>
+          <div id="finance-stats" class="finance-stats"></div>
+        </div>
+
+        <div class="cell">
+          <div class="cell-head"><h3>Nouvelle transaction</h3></div>
+          <div class="tx-add">
+            <input id="tx-desc" type="text" placeholder="Description…" maxlength="60" autocomplete="off">
+            <input id="tx-amt"  type="number" placeholder="0.00" min="0" step="0.01" inputmode="decimal">
+            <div class="tx-buttons">
+              <button class="btn-red"   id="btn-expense" title="Dépense">−</button>
+              <button class="btn-green" id="btn-income"  title="Revenu">＋</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="cell">
+          <div class="cell-head"><h3>Budget mensuel</h3></div>
+          <div id="budget-content"></div>
+        </div>
+
+        <div class="cell wide">
+          <div class="cell-head"><h3>Dépenses — 7 jours</h3></div>
+          <div class="bar-chart" id="spending-chart"></div>
+        </div>
+
+        <div class="cell wide">
+          <div class="cell-head"><h3>Transactions récentes</h3></div>
+          <ul id="tx-list" class="item-list"></ul>
+        </div>
+
+      </div>
+    </section>
+
+
+    <!-- ─────────────────────────────────────── VIEW : BIEN-ÊTRE -->
+    <section class="view" id="view-wellness" hidden>
+      <div class="bento bento-wellness">
+
+        <div class="cell">
+          <div class="cell-head">
+            <h3>Sommeil</h3>
+            <span class="muted" id="sleep-dur-lbl"></span>
+          </div>
+          <div class="sleep-inputs">
+            <div class="sleep-field">
+              <label class="sleep-lbl">Coucher</label>
+              <input type="time" id="sleep-bed">
+            </div>
+            <span class="sleep-arrow">→</span>
+            <div class="sleep-field">
+              <label class="sleep-lbl">Réveil</label>
+              <input type="time" id="sleep-wake">
+            </div>
+            <button class="btn-save-round" id="btn-save-sleep" title="Enregistrer">✓</button>
+          </div>
+          <div class="bar-chart" id="sleep-chart"></div>
+        </div>
+
+        <div class="cell">
+          <div class="cell-head">
+            <h3>Poids</h3>
+            <span class="muted" id="weight-lbl"></span>
+          </div>
+          <div class="weight-row">
+            <input type="number" id="weight-val" placeholder="75.0" step="0.1" min="20" max="300" inputmode="decimal">
+            <span class="weight-unit">kg</span>
+            <button class="btn-save-round" id="btn-save-weight">✓</button>
+          </div>
+          <svg id="weight-chart" class="weight-svg" viewBox="0 0 200 55" preserveAspectRatio="none"></svg>
+          <div class="weight-axis" id="weight-axis"></div>
+        </div>
+
+        <div class="cell wide">
+          <div class="cell-head"><h3>Humeur — 30 derniers jours</h3></div>
+          <div class="mood-chart" id="mood-chart"></div>
+        </div>
+
+        <div class="cell wide">
+          <div class="cell-head"><h3>Énergie cette semaine</h3></div>
+          <div id="energy-week"></div>
+        </div>
+
+      </div>
+    </section>
+
+
+    <!-- ─────────────────────────────────────── VIEW : JOURNAL -->
+    <section class="view" id="view-journal" hidden>
+      <div class="bento bento-journal">
+        <div class="cell wide journal-main">
+          <div class="cell-head">
+            <h3 id="journal-date-lbl"></h3>
+            <div class="journal-nav">
+              <button class="ghost-btn" id="journal-prev" title="Précédent">←</button>
+              <button class="ghost-btn" id="journal-next" title="Suivant">→</button>
+            </div>
+          </div>
+          <textarea id="journal-text" class="journal-area"
+                    placeholder="Quelques mots sur ta journée…"
+                    maxlength="2000"></textarea>
+          <div class="muted" id="journal-chars">0 / 2000</div>
+        </div>
+      </div>
+    </section>
+
+
+  </main>
+</div>
+
+
+<!-- ── Modal ajout habitude ────────── -->
+<div id="habit-modal" class="modal-bg" hidden>
+  <div class="modal-box" role="dialog" aria-modal="true" aria-label="Nouvelle habitude">
+    <h3>Nouvelle habitude</h3>
+    <input id="habit-name" type="text" placeholder="Ex : Sport, Lecture, Eau…" maxlength="30" autocomplete="off">
+    <div class="color-label">Couleur</div>
+    <div id="color-picker" class="color-row"></div>
+    <div class="modal-foot">
+      <button class="btn-ghost-modal" id="btn-cancel-habit">Annuler</button>
+      <button class="btn-primary-modal" id="btn-save-habit">Ajouter</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── Modal ajout objectif ────────── -->
+<div id="goal-modal" class="modal-bg" hidden>
+  <div class="modal-box" role="dialog" aria-modal="true" aria-label="Nouvel objectif">
+    <h3>Nouvel objectif du mois</h3>
+    <input id="goal-label" type="text" placeholder="Ex : Lire 3 livres, Faire du sport 12×…" maxlength="60" autocomplete="off">
+    <div class="modal-foot">
+      <button class="btn-ghost-modal" id="btn-cancel-goal">Annuler</button>
+      <button class="btn-primary-modal" id="btn-save-goal">Ajouter</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── Modal compte à rebours ────────── -->
+<div id="count-modal" class="modal-bg" hidden>
+  <div class="modal-box" role="dialog" aria-modal="true" aria-label="Nouveau compte à rebours">
+    <h3>Nouveau compte à rebours</h3>
+    <input id="count-label" type="text" placeholder="Ex : Vacances, Anniversaire, Deadline…" maxlength="40" autocomplete="off">
+    <div class="color-label" style="margin-top:12px">Date</div>
+    <input id="count-date" type="date">
+    <div class="modal-foot">
+      <button class="btn-ghost-modal" id="btn-cancel-count">Annuler</button>
+      <button class="btn-primary-modal" id="btn-save-count">Ajouter</button>
+    </div>
+  </div>
+</div>
+
+
+<script src="app.js"></script>
+</body>
+</html>
