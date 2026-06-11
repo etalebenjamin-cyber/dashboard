@@ -5,7 +5,7 @@
 //   2. En parallèle, fetcher le réseau pour rafraîchir le cache (prochain chargement = à jour)
 //   3. /api/* est exclu : toujours réseau, jamais cache
 
-const CACHE = 'dashboard-perso-v12';
+const CACHE = 'dashboard-perso-v13';
 const SHELL = [
   './',
   './index.html',

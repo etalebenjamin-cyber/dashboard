@@ -1764,8 +1764,20 @@ function renderAll() {
 
 // ── Service Worker ────────────────────────────────────────────────────────
 
-if ('serviceWorker' in navigator) {
+// Service Worker uniquement sur hôtes "publics" (PWA tel / GitHub Pages / Tailscale).
+// PAS sur localhost : le Mac natif a besoin que chaque maj soit live IMMÉDIATEMENT,
+// pas après refresh × 2 à cause du cache SW.
+const SW_NEEDED = 'serviceWorker' in navigator
+  && location.hostname !== 'localhost'
+  && location.hostname !== '127.0.0.1';
+
+if (SW_NEEDED) {
   navigator.serviceWorker.register('./sw.js').catch(() => {});
+} else if ('serviceWorker' in navigator) {
+  // Si on est sur localhost mais qu'un ancien SW était déjà installé, le désinscrire
+  navigator.serviceWorker.getRegistrations().then(regs => {
+    for (const r of regs) r.unregister();
+  }).catch(() => {});
 }
 
 // ── Boot ──────────────────────────────────────────────────────────────────

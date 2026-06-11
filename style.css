@@ -185,9 +185,11 @@ button { cursor: pointer; background: none; border: none; }
 }
 
 .nav-item.active {
-  background: var(--accent-bg);
+  background: linear-gradient(135deg, var(--accent-bg) 0%, transparent 100%);
   color: var(--accent);
-  font-weight: 600;
+  font-weight: 700;
+  box-shadow: inset 3px 0 0 var(--accent);
+  padding-left: 12px;
 }
 
 .nav-ico {
@@ -249,10 +251,14 @@ button { cursor: pointer; background: none; border: none; }
 }
 
 .page-title {
-  font-size: 22px;
-  font-weight: 700;
-  letter-spacing: -.02em;
+  font-size: 26px;
+  font-weight: 800;
+  letter-spacing: -.025em;
   color: var(--ink);
+  background: linear-gradient(135deg, var(--ink) 0%, var(--accent) 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
 }
 
 .page-sub {
@@ -308,12 +314,41 @@ button { cursor: pointer; background: none; border: none; }
   gap: 12px;
   grid-column: span 4;
   min-width: 0;
-  transition: transform .15s ease, box-shadow .15s ease;
+  position: relative;
+  transition: transform .2s cubic-bezier(.4, 0, .2, 1), box-shadow .2s, border-color .2s;
 }
 
 .cell:hover {
   box-shadow: var(--shadow);
+  transform: translateY(-1px);
+  border-color: rgba(94, 92, 230, .25);
 }
+
+/* Liseré coloré subtil en haut de chaque carte selon son thème */
+.cell::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 16px; right: 16px;
+  height: 2px;
+  border-radius: 0 0 2px 2px;
+  background: var(--line);
+  transition: background .2s;
+  opacity: 0;
+}
+.cell:hover::before { opacity: 1; }
+
+.bento-today .tasks-cell:hover::before        { background: var(--accent);    opacity: .9; }
+.bento-today .habits-today-cell:hover::before { background: var(--c-routine); opacity: .9; }
+.bento-today .pom-cell:hover::before          { background: var(--c-pom);     opacity: .9; }
+.bento-today .mood-cell:hover::before         { background: var(--c-mood);    opacity: .9; }
+.bento-today .water-cell:hover::before        { background: var(--c-water);   opacity: .9; }
+.bento-today .energy-cell:hover::before       { background: var(--c-energy);  opacity: .9; }
+.bento-today .routine-cell:hover::before      { background: var(--c-routine); opacity: .9; }
+.bento-today .goals-cell:hover::before        { background: var(--c-goal);    opacity: .9; }
+.bento-today .countdowns-cell:hover::before   { background: var(--c-count);   opacity: .9; }
+.bento-today .rewards-cell:hover::before      { background: var(--c-pom);     opacity: .9; }
+.bento-today .week-cell:hover::before         { background: var(--accent);    opacity: .9; }
+.bento-today .inbox-cell:hover::before        { background: var(--teal);      opacity: .9; }
 
 .cell.wide  { grid-column: span 6; }
 .cell.small { grid-column: span 3; }
@@ -328,12 +363,34 @@ button { cursor: pointer; background: none; border: none; }
 }
 
 .cell-head h3 {
-  font-size: 12px;
-  font-weight: 700;
+  font-size: 11.5px;
+  font-weight: 800;
   text-transform: uppercase;
-  letter-spacing: .06em;
+  letter-spacing: .09em;
   color: var(--ink-sec);
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
 }
+.cell-head h3::before {
+  content: '';
+  width: 4px; height: 4px;
+  border-radius: 50%;
+  background: var(--accent);
+  display: inline-block;
+}
+.bento-today .tasks-cell .cell-head h3::before        { background: var(--accent);    }
+.bento-today .habits-today-cell .cell-head h3::before { background: var(--c-routine); }
+.bento-today .pom-cell .cell-head h3::before          { background: var(--c-pom);     }
+.bento-today .mood-cell .cell-head h3::before         { background: var(--c-mood);    }
+.bento-today .water-cell .cell-head h3::before        { background: var(--c-water);   }
+.bento-today .energy-cell .cell-head h3::before       { background: var(--c-energy);  }
+.bento-today .routine-cell .cell-head h3::before      { background: var(--c-routine); }
+.bento-today .goals-cell .cell-head h3::before        { background: var(--c-goal);    }
+.bento-today .countdowns-cell .cell-head h3::before   { background: var(--c-count);   }
+.bento-today .rewards-cell .cell-head h3::before      { background: var(--c-pom);     }
+.bento-today .week-cell .cell-head h3::before         { background: var(--accent);    }
+.bento-today .inbox-cell .cell-head h3::before        { background: var(--teal);      }
 
 .muted { color: var(--ink-mut); font-size: 12px; }
 
@@ -346,31 +403,63 @@ button { cursor: pointer; background: none; border: none; }
   color: var(--accent);
 }
 
-/* Hero — résumé du jour */
-.cell.hero { grid-column: span 12; padding: 22px 24px; }
+/* Hero — résumé du jour avec gradient mesh */
+.cell.hero {
+  grid-column: span 12;
+  padding: 24px 28px;
+  background:
+    radial-gradient(circle at 0% 0%,   rgba(94, 92, 230, .18) 0%, transparent 50%),
+    radial-gradient(circle at 100% 0%, rgba(255, 100, 130, .15) 0%, transparent 50%),
+    radial-gradient(circle at 50% 100%, rgba(48, 209, 88, .12) 0%, transparent 50%),
+    var(--card);
+  border: 1px solid var(--line);
+  position: relative;
+  overflow: hidden;
+}
+
+.cell.hero::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, rgba(255,255,255,.05) 0%, transparent 60%);
+  pointer-events: none;
+}
 
 .hero-stats {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
-  gap: 24px;
+  gap: 28px;
+  position: relative;
+  z-index: 1;
 }
 
-.hero-stat { display: flex; flex-direction: column; gap: 2px; }
+.hero-stat {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  transition: transform .2s;
+}
+.hero-stat:hover { transform: translateY(-2px); }
 
 .hero-stat-num {
-  font-size: 26px;
-  font-weight: 700;
-  letter-spacing: -.02em;
+  font-size: 32px;
+  font-weight: 800;
+  letter-spacing: -.03em;
   color: var(--ink);
   font-variant-numeric: tabular-nums;
+  line-height: 1;
+  background: linear-gradient(135deg, var(--ink) 0%, var(--ink-sec) 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
 }
 
 .hero-stat-lbl {
-  font-size: 12px;
+  font-size: 11px;
   color: var(--ink-sec);
   text-transform: uppercase;
-  letter-spacing: .04em;
-  font-weight: 600;
+  letter-spacing: .08em;
+  font-weight: 700;
 }
 
 /* Bento today : assignations explicites */
