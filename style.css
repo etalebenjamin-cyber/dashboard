@@ -972,6 +972,131 @@ input::placeholder, textarea::placeholder {
 }
 
 /* ═══════════════════════════════════════════════════════════════════════
+   NOTIFICATIONS / RAPPELS
+   ═══════════════════════════════════════════════════════════════════════ */
+
+.bento-today .notifs-cell { grid-column: span 12; }
+
+.notifs-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.btn-success {
+  background: var(--accent-bg) !important;
+  color: var(--accent) !important;
+  font-weight: 700 !important;
+}
+
+.notif-item {
+  display: grid;
+  grid-template-columns: auto auto 1fr auto;
+  gap: 12px;
+  align-items: center;
+  padding: 10px 8px;
+  border-radius: var(--r-m);
+  transition: background .15s, opacity .15s;
+}
+.notif-item:hover { background: var(--line-soft); }
+.notif-item.off   { opacity: .5; }
+
+.notif-toggle {
+  width: 38px; height: 22px;
+  border-radius: 100px;
+  background: var(--line);
+  position: relative;
+  transition: background .2s;
+  flex-shrink: 0;
+}
+.notif-toggle::after {
+  content: '';
+  position: absolute;
+  top: 2px; left: 2px;
+  width: 18px; height: 18px;
+  border-radius: 50%;
+  background: white;
+  transition: transform .2s;
+  box-shadow: 0 1px 3px rgba(0,0,0,.2);
+}
+.notif-toggle.on { background: var(--accent); }
+.notif-toggle.on::after { transform: translateX(16px); }
+
+.notif-time {
+  font-size: 17px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--ink);
+  letter-spacing: -.01em;
+  min-width: 50px;
+}
+
+.notif-info {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.notif-text {
+  font-size: 13.5px;
+  color: var(--ink);
+  font-weight: 500;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.notif-days {
+  font-size: 10.5px;
+  color: var(--ink-mut);
+  text-transform: uppercase;
+  letter-spacing: .04em;
+  font-weight: 600;
+  margin-top: 2px;
+}
+
+/* Modal time / days */
+.notif-time-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+.notif-time-row span {
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--ink-sec);
+}
+.notif-time-row input {
+  width: 70px;
+  font-size: 20px;
+  font-weight: 700;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+
+.notif-days-row {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 6px;
+  margin-bottom: 20px;
+}
+.notif-day-pick {
+  height: 36px;
+  border-radius: var(--r-m);
+  background: var(--card-2);
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--ink-sec);
+  border: 1.5px solid transparent;
+  transition: all .15s;
+}
+.notif-day-pick:hover { background: var(--line); }
+.notif-day-pick.sel {
+  background: var(--accent-bg);
+  color: var(--accent);
+  border-color: var(--accent);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
    RÉCOMPENSES IRL
    ═══════════════════════════════════════════════════════════════════════ */
 
@@ -1696,7 +1821,8 @@ input::placeholder, textarea::placeholder {
   .bento-today .pom-cell, .bento-today .mood-cell, .bento-today .energy-cell,
   .bento-today .water-cell, .bento-today .routine-cell, .bento-today .inbox-cell,
   .bento-today .week-cell, .bento-today .goals-cell,
-  .bento-today .countdowns-cell, .bento-today .rewards-cell {
+  .bento-today .countdowns-cell, .bento-today .rewards-cell,
+  .bento-today .notifs-cell {
     grid-column: span 12;
   }
 

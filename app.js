@@ -62,6 +62,7 @@ function defaultState() {
     energy:   [],          // [{ date, time, value }]
     goals:    [],          // [{ id, label, progress: 0-100 }]
     countdowns: [],        // [{ id, label, date: 'YYYY-MM-DD' }]
+    notifs:   [],          // [{ id, text, hour, minute, days:[0-6], enabled }]
     rewards:  [
       { id: 'rw1', emoji: '🍕', label: 'Cheat meal',          target: 7,  tracker: 'global_streak',  claimed: 0, history: [] },
       { id: 'rw2', emoji: '🎮', label: '2h gaming',           target: 10, tracker: 'week_focus',     claimed: 0, history: [] },
@@ -246,6 +247,7 @@ function mergeStates(remote, local) {
     goals:      mergeByKey(remote.goals     || [], local.goals     || [], 'id', localNewer),
     countdowns: mergeByKey(remote.countdowns|| [], local.countdowns|| [], 'id', localNewer),
     rewards:    mergeByKey(remote.rewards   || [], local.rewards   || [], 'id', localNewer),
+    notifs:     mergeByKey(remote.notifs    || [], local.notifs    || [], 'id', localNewer),
     routines:   mergeRoutines(remote.routines || {}, local.routines || {}, localNewer),
     _mt: Math.max(remote._mt || 0, local._mt || 0)
   };
@@ -1509,6 +1511,192 @@ function initCountdowns() {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
+// PUSH NOTIFICATIONS (Web Push)
+// ═══════════════════════════════════════════════════════════════════════════
+
+function urlBase64ToUint8Array(b) {
+  const padding = '='.repeat((4 - b.length % 4) % 4);
+  const base64 = (b + padding).replace(/-/g, '+').replace(/_/g, '/');
+  const raw = atob(base64);
+  const arr = new Uint8Array(raw.length);
+  for (let i = 0; i < raw.length; i++) arr[i] = raw.charCodeAt(i);
+  return arr;
+}
+
+async function enableNotifications() {
+  if (STANDALONE) {
+    alert('Les notifications push nécessitent le serveur (Tailscale URL ou Mac), pas la version GitHub Pages.');
+    return false;
+  }
+  if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
+    alert('Ce navigateur ne supporte pas les notifs push.');
+    return false;
+  }
+  const permission = await Notification.requestPermission();
+  if (permission !== 'granted') {
+    alert('Permission refusée. Tu peux la réactiver dans les réglages de Safari.');
+    return false;
+  }
+  try {
+    const res = await fetch('/api/vapid-key');
+    const { publicKey } = await res.json();
+    if (!publicKey) throw new Error('Clé VAPID manquante côté serveur');
+    const reg = await navigator.serviceWorker.ready;
+    const existing = await reg.pushManager.getSubscription();
+    const sub = existing || await reg.pushManager.subscribe({
+      userVisibleOnly: true,
+      applicationServerKey: urlBase64ToUint8Array(publicKey)
+    });
+    await fetch('/api/push-subscribe', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(sub.toJSON())
+    });
+    return true;
+  } catch (e) {
+    alert('Erreur abonnement push : ' + e.message);
+    return false;
+  }
+}
+
+async function sendTestPush() {
+  try {
+    const res = await fetch('/api/push-test', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ title: 'Dashboard 🎯', body: 'Si tu vois ça, le push marche !' })
+    });
+    const data = await res.json();
+    if (data.sent > 0) {
+      alert(`✓ Push envoyé à ${data.sent} appareil(s)`);
+    } else {
+      alert('Aucun appareil abonné. Active d\'abord les notifications.');
+    }
+  } catch (e) {
+    alert('Erreur : ' + e.message);
+  }
+}
+
+// ── Gestion des règles de notifications ───────────────────────────────
+
+const DAYS_FR = ['D', 'L', 'M', 'M', 'J', 'V', 'S'];
+
+function renderNotifs() {
+  const wrap = document.getElementById('notifs-list');
+  if (!wrap) return;
+  state.notifs = state.notifs || [];
+
+  const permState = (typeof Notification !== 'undefined') ? Notification.permission : 'default';
+  const btn = document.getElementById('btn-enable-notifs');
+  const testBtn = document.getElementById('btn-test-notif');
+  if (btn) {
+    if (STANDALONE) {
+      btn.textContent = '⚠ Notifs serveur uniquement';
+      btn.disabled = true;
+    } else if (permState === 'granted') {
+      btn.textContent = '✓ Notifs activées';
+      btn.classList.add('btn-success');
+    } else {
+      btn.textContent = 'Activer les notifs';
+    }
+  }
+  if (testBtn) testBtn.disabled = STANDALONE || permState !== 'granted';
+
+  if (!state.notifs.length) {
+    wrap.innerHTML = '<div class="empty-state">Aucun rappel — clique sur ＋ pour ajouter</div>';
+    return;
+  }
+  wrap.innerHTML = state.notifs.map(n => {
+    const hh = String(n.hour).padStart(2, '0');
+    const mm = String(n.minute).padStart(2, '0');
+    const days = n.days && n.days.length
+      ? n.days.map(d => DAYS_FR[d]).join(' ')
+      : 'Tous les jours';
+    return `<div class="notif-item${n.enabled === false ? ' off' : ''}">
+      <button class="notif-toggle${n.enabled === false ? '' : ' on'}"
+              onclick="toggleNotif('${n.id}')" title="${n.enabled === false ? 'Désactivée' : 'Activée'}"></button>
+      <div class="notif-time">${hh}:${mm}</div>
+      <div class="notif-info">
+        <span class="notif-text">${esc(n.text)}</span>
+        <span class="notif-days">${days}</span>
+      </div>
+      <button class="del-btn" onclick="deleteNotif('${n.id}')">×</button>
+    </div>`;
+  }).join('');
+}
+
+window.toggleNotif = function(id) {
+  const n = state.notifs.find(x => x.id === id);
+  if (!n) return;
+  n.enabled = n.enabled === false ? true : false;
+  save(); renderNotifs();
+};
+
+window.deleteNotif = function(id) {
+  state.notifs = state.notifs.filter(n => n.id !== id);
+  save(); renderNotifs();
+};
+
+let notifDaysPicked = [];
+
+function openNotifModal() {
+  document.getElementById('notif-text').value = '';
+  const now = new Date();
+  document.getElementById('notif-hour').value = String(now.getHours()).padStart(2, '0');
+  document.getElementById('notif-minute').value = '00';
+  notifDaysPicked = [1,2,3,4,5,6,0];  // tous les jours
+  document.querySelectorAll('.notif-day-pick').forEach(b => {
+    b.classList.toggle('sel', notifDaysPicked.includes(parseInt(b.dataset.day, 10)));
+  });
+  document.getElementById('notif-modal').hidden = false;
+  document.getElementById('notif-text').focus();
+}
+
+function closeNotifModal() { document.getElementById('notif-modal').hidden = true; }
+
+function saveNotif() {
+  const text = document.getElementById('notif-text').value.trim();
+  const hour = parseInt(document.getElementById('notif-hour').value, 10);
+  const minute = parseInt(document.getElementById('notif-minute').value, 10);
+  if (!text || isNaN(hour) || isNaN(minute)) return;
+  state.notifs = state.notifs || [];
+  state.notifs.push({
+    id: uid(), text,
+    hour: Math.max(0, Math.min(23, hour)),
+    minute: Math.max(0, Math.min(59, minute)),
+    days: notifDaysPicked.length ? [...notifDaysPicked] : [],
+    enabled: true
+  });
+  save(); renderNotifs(); closeNotifModal();
+}
+
+function initNotifs() {
+  const en = document.getElementById('btn-enable-notifs');
+  if (en) en.onclick = async () => {
+    const ok = await enableNotifications();
+    if (ok) renderNotifs();
+  };
+  const test = document.getElementById('btn-test-notif');
+  if (test) test.onclick = sendTestPush;
+  const add = document.getElementById('btn-add-notif');
+  if (add) add.onclick = openNotifModal;
+  const saveBtn = document.getElementById('btn-save-notif');
+  if (saveBtn) saveBtn.onclick = saveNotif;
+  const cancel = document.getElementById('btn-cancel-notif');
+  if (cancel) cancel.onclick = closeNotifModal;
+  const modal = document.getElementById('notif-modal');
+  if (modal) modal.onclick = e => { if (e.target === modal) closeNotifModal(); };
+  document.querySelectorAll('.notif-day-pick').forEach(b => {
+    b.onclick = () => {
+      const d = parseInt(b.dataset.day, 10);
+      const i = notifDaysPicked.indexOf(d);
+      if (i >= 0) notifDaysPicked.splice(i, 1); else notifDaysPicked.push(d);
+      b.classList.toggle('sel');
+    };
+  });
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
 // RÉCOMPENSES IRL
 // ═══════════════════════════════════════════════════════════════════════════
 
@@ -1760,6 +1948,7 @@ function renderAll() {
   renderGoals();
   renderCountdowns();
   renderRewards();
+  renderNotifs();
 }
 
 // ── Service Worker ────────────────────────────────────────────────────────
@@ -1822,9 +2011,13 @@ document.addEventListener('DOMContentLoaded', async () => {
   initGoals();
   initCountdowns();
   initRewards();
+  initNotifs();
+
+  // Migration manquante : notifs
+  state.notifs = state.notifs || [];
 
   // FAILSAFE : force fermer toutes les modals au boot
-  ['habit-modal', 'goal-modal', 'count-modal', 'reward-modal'].forEach(id => {
+  ['habit-modal', 'goal-modal', 'count-modal', 'reward-modal', 'notif-modal'].forEach(id => {
     const m = document.getElementById(id);
     if (m) m.hidden = true;
   });

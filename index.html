@@ -238,6 +238,19 @@
           <div id="rewards-list" class="rewards-grid"></div>
         </div>
 
+        <!-- NOTIFICATIONS — wide -->
+        <div class="cell notifs-cell">
+          <div class="cell-head">
+            <h3>Notifications</h3>
+            <div class="notifs-actions">
+              <button class="ghost-btn" id="btn-enable-notifs">Activer les notifs</button>
+              <button class="ghost-btn" id="btn-test-notif" disabled>Test</button>
+              <button class="icon-btn" id="btn-add-notif" title="Ajouter un rappel">＋</button>
+            </div>
+          </div>
+          <div id="notifs-list"></div>
+        </div>
+
         <!-- INBOX / CAPTURE RAPIDE — wide -->
         <div class="cell inbox-cell">
           <div class="cell-head">
@@ -415,6 +428,37 @@
     <div class="modal-foot">
       <button class="btn-ghost-modal" id="btn-cancel-goal">Annuler</button>
       <button class="btn-primary-modal" id="btn-save-goal">Ajouter</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── Modal notification ────────── -->
+<div id="notif-modal" class="modal-bg" hidden>
+  <div class="modal-box" role="dialog" aria-modal="true" aria-label="Nouveau rappel">
+    <h3>Nouveau rappel</h3>
+    <input id="notif-text" type="text" placeholder="Ex : Bois de l'eau, Routine du soir…" maxlength="80" autocomplete="off">
+
+    <div class="color-label" style="margin-top:12px">Heure</div>
+    <div class="notif-time-row">
+      <input id="notif-hour"   type="number" min="0" max="23" placeholder="HH">
+      <span>:</span>
+      <input id="notif-minute" type="number" min="0" max="59" placeholder="MM">
+    </div>
+
+    <div class="color-label" style="margin-top:12px">Jours de la semaine</div>
+    <div class="notif-days-row">
+      <button type="button" class="notif-day-pick sel" data-day="1">L</button>
+      <button type="button" class="notif-day-pick sel" data-day="2">M</button>
+      <button type="button" class="notif-day-pick sel" data-day="3">M</button>
+      <button type="button" class="notif-day-pick sel" data-day="4">J</button>
+      <button type="button" class="notif-day-pick sel" data-day="5">V</button>
+      <button type="button" class="notif-day-pick sel" data-day="6">S</button>
+      <button type="button" class="notif-day-pick sel" data-day="0">D</button>
+    </div>
+
+    <div class="modal-foot">
+      <button class="btn-ghost-modal" id="btn-cancel-notif">Annuler</button>
+      <button class="btn-primary-modal" id="btn-save-notif">Ajouter</button>
     </div>
   </div>
 </div>

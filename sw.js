@@ -5,7 +5,7 @@
 //   2. En parallèle, fetcher le réseau pour rafraîchir le cache (prochain chargement = à jour)
 //   3. /api/* est exclu : toujours réseau, jamais cache
 
-const CACHE = 'dashboard-perso-v13';
+const CACHE = 'dashboard-perso-v14';
 const SHELL = [
   './',
   './index.html',
@@ -42,6 +42,37 @@ self.addEventListener('activate', (event) => {
   })());
 });
 
+// ── Push (Web Push API) ─────────────────────────────────────────────
+self.addEventListener('push', (event) => {
+  let data = { title: 'Dashboard', body: 'Notification' };
+  if (event.data) {
+    try { data = event.data.json(); }
+    catch { data = { title: 'Dashboard', body: event.data.text() }; }
+  }
+  event.waitUntil(
+    self.registration.showNotification(data.title || 'Dashboard', {
+      body: data.body || '',
+      icon: './icon-192.png',
+      badge: './icon-192.png',
+      tag:  data.tag || 'dashboard',
+      data: data.data || {},
+      requireInteraction: false
+    })
+  );
+});
+
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close();
+  event.waitUntil((async () => {
+    const list = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
+    for (const c of list) {
+      if ('focus' in c) return c.focus();
+    }
+    if (self.clients.openWindow) return self.clients.openWindow('./');
+  })());
+});
+
+// ── Fetch ────────────────────────────────────────────────────────────
 self.addEventListener('fetch', (event) => {
   const req = event.request;
   const url = new URL(req.url);
