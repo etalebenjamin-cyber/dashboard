@@ -229,6 +229,15 @@
           <div id="countdowns-list"></div>
         </div>
 
+        <!-- RÉCOMPENSES — wide -->
+        <div class="cell rewards-cell">
+          <div class="cell-head">
+            <h3>Récompenses</h3>
+            <button class="icon-btn" id="btn-add-reward" title="Ajouter">＋</button>
+          </div>
+          <div id="rewards-list" class="rewards-grid"></div>
+        </div>
+
         <!-- INBOX / CAPTURE RAPIDE — wide -->
         <div class="cell inbox-cell">
           <div class="cell-head">
@@ -406,6 +415,47 @@
     <div class="modal-foot">
       <button class="btn-ghost-modal" id="btn-cancel-goal">Annuler</button>
       <button class="btn-primary-modal" id="btn-save-goal">Ajouter</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── Modal récompense ────────── -->
+<div id="reward-modal" class="modal-bg" hidden>
+  <div class="modal-box" role="dialog" aria-modal="true" aria-label="Nouvelle récompense">
+    <h3>Nouvelle récompense</h3>
+    <div class="reward-emoji-row">
+      <button type="button" class="emoji-pick" data-emoji="🍕">🍕</button>
+      <button type="button" class="emoji-pick" data-emoji="🍔">🍔</button>
+      <button type="button" class="emoji-pick" data-emoji="🍫">🍫</button>
+      <button type="button" class="emoji-pick" data-emoji="🍺">🍺</button>
+      <button type="button" class="emoji-pick" data-emoji="🎮">🎮</button>
+      <button type="button" class="emoji-pick" data-emoji="📺">📺</button>
+      <button type="button" class="emoji-pick" data-emoji="😴">😴</button>
+      <button type="button" class="emoji-pick" data-emoji="🛍️">🛍️</button>
+      <button type="button" class="emoji-pick" data-emoji="🎬">🎬</button>
+      <button type="button" class="emoji-pick" data-emoji="🍩">🍩</button>
+      <button type="button" class="emoji-pick" data-emoji="☕">☕</button>
+      <button type="button" class="emoji-pick" data-emoji="🎁">🎁</button>
+    </div>
+    <input id="reward-label" type="text" placeholder="Ex : Cheat meal pizza, Soirée Netflix…" maxlength="50" autocomplete="off">
+
+    <div class="color-label" style="margin-top:12px">Comment tu la gagnes</div>
+    <select id="reward-tracker" class="reward-select">
+      <option value="global_streak">Jours de streak global d'affilée</option>
+      <option value="week_tasks">Tâches terminées cette semaine</option>
+      <option value="week_habits">Habitudes cochées cette semaine</option>
+      <option value="week_focus">Sessions Focus cette semaine</option>
+      <option value="morning_streak">Routines matin d'affilée</option>
+      <option value="evening_streak">Routines soir d'affilée</option>
+      <option value="water_streak">Jours à 8 verres d'eau d'affilée</option>
+    </select>
+
+    <div class="color-label" style="margin-top:12px">Cible à atteindre</div>
+    <input id="reward-target" type="number" min="1" max="365" placeholder="Ex : 7" value="7">
+
+    <div class="modal-foot">
+      <button class="btn-ghost-modal" id="btn-cancel-reward">Annuler</button>
+      <button class="btn-primary-modal" id="btn-save-reward">Ajouter</button>
     </div>
   </div>
 </div>

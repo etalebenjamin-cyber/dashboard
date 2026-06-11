@@ -384,6 +384,7 @@ button { cursor: pointer; background: none; border: none; }
 .bento-today .week-cell         { grid-column: span 12; }
 .bento-today .goals-cell        { grid-column: span 6; }
 .bento-today .countdowns-cell   { grid-column: span 6; }
+.bento-today .rewards-cell      { grid-column: span 12; }
 .bento-today .inbox-cell        { grid-column: span 12; }
 
 /* ═══════════════════════════════════════════════════════════════════════
@@ -880,6 +881,177 @@ input::placeholder, textarea::placeholder {
   color: var(--ink-mut);
   text-decoration: line-through;
 }
+
+/* ═══════════════════════════════════════════════════════════════════════
+   RÉCOMPENSES IRL
+   ═══════════════════════════════════════════════════════════════════════ */
+
+.rewards-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 10px;
+}
+
+.reward-card {
+  background: var(--card-2);
+  border: 1px solid var(--line);
+  border-radius: var(--r-l);
+  padding: 14px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  align-items: center;
+  text-align: center;
+  position: relative;
+  transition: transform .15s, box-shadow .15s;
+}
+
+.reward-card:hover { box-shadow: var(--shadow-s); }
+
+.reward-card.ready {
+  background: linear-gradient(135deg, rgba(255, 195, 0, .14), rgba(255, 100, 130, .14));
+  border-color: var(--c-pom);
+  animation: pulseGlow 2s ease-in-out infinite;
+}
+
+@keyframes pulseGlow {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(255, 100, 130, .4); }
+  50%      { box-shadow: 0 0 0 6px rgba(255, 100, 130, 0); }
+}
+
+.reward-emoji {
+  font-size: 38px;
+  line-height: 1;
+}
+
+.reward-label {
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--ink);
+  min-height: 32px;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.reward-progress-num {
+  font-size: 11.5px;
+  font-weight: 700;
+  color: var(--ink-sec);
+  font-variant-numeric: tabular-nums;
+}
+
+.reward-progress-bar {
+  width: 100%;
+  height: 5px;
+  background: var(--line);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.reward-progress-fill {
+  height: 100%;
+  background: var(--accent);
+  border-radius: 3px;
+  transition: width .4s ease;
+}
+
+.reward-card.ready .reward-progress-fill { background: var(--c-pom); }
+
+.reward-claim-btn {
+  width: 100%;
+  padding: 8px;
+  border-radius: var(--r-m);
+  background: var(--c-pom);
+  color: white;
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .03em;
+  transition: transform .1s, opacity .15s;
+}
+.reward-claim-btn:hover { transform: scale(1.04); }
+.reward-claim-btn:active { transform: scale(.96); }
+
+.reward-tracker-lbl {
+  font-size: 10px;
+  color: var(--ink-mut);
+  text-transform: uppercase;
+  letter-spacing: .04em;
+  font-weight: 600;
+}
+
+.reward-claimed-count {
+  position: absolute;
+  top: 6px;
+  right: 8px;
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--ink-mut);
+  background: var(--line);
+  padding: 2px 6px;
+  border-radius: 100px;
+}
+
+.reward-del {
+  position: absolute;
+  top: 6px;
+  left: 6px;
+  width: 22px; height: 22px;
+  border-radius: 50%;
+  font-size: 12px;
+  color: var(--ink-mut);
+  background: transparent;
+  display: grid; place-items: center;
+  opacity: 0;
+  transition: opacity .15s, background .15s, color .15s;
+}
+.reward-card:hover .reward-del { opacity: 1; }
+.reward-del:hover { background: var(--red); color: white; }
+
+/* Modal récompense : grille d'emojis */
+.reward-emoji-row {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 6px;
+  margin-bottom: 16px;
+}
+.emoji-pick {
+  height: 38px;
+  border-radius: var(--r-m);
+  background: var(--card-2);
+  font-size: 22px;
+  display: grid; place-items: center;
+  border: 1.5px solid transparent;
+  transition: all .15s;
+}
+.emoji-pick:hover { background: var(--line); }
+.emoji-pick.sel {
+  border-color: var(--accent);
+  background: var(--accent-bg);
+  transform: scale(1.06);
+}
+
+.reward-select {
+  width: 100%;
+  background: var(--card-2);
+  border: 1px solid var(--line);
+  border-radius: var(--r-m);
+  padding: 10px 12px;
+  font-size: 14px;
+  color: var(--ink);
+}
+
+/* Animation de célébration au déblocage */
+@keyframes celebrate {
+  0%   { transform: scale(1) rotate(0); }
+  25%  { transform: scale(1.15) rotate(-3deg); }
+  50%  { transform: scale(1.2) rotate(3deg); }
+  75%  { transform: scale(1.15) rotate(-2deg); }
+  100% { transform: scale(1) rotate(0); }
+}
+.reward-card.just-claimed { animation: celebrate .6s ease-out; }
 
 /* ═══════════════════════════════════════════════════════════════════════
    CALENDRIER SEMAINE
@@ -1434,7 +1606,8 @@ input::placeholder, textarea::placeholder {
   .bento-today .tasks-cell, .bento-today .habits-today-cell,
   .bento-today .pom-cell, .bento-today .mood-cell, .bento-today .energy-cell,
   .bento-today .water-cell, .bento-today .routine-cell, .bento-today .inbox-cell,
-  .bento-today .week-cell, .bento-today .goals-cell, .bento-today .countdowns-cell {
+  .bento-today .week-cell, .bento-today .goals-cell,
+  .bento-today .countdowns-cell, .bento-today .rewards-cell {
     grid-column: span 12;
   }
 

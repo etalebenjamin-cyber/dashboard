@@ -62,6 +62,13 @@ function defaultState() {
     energy:   [],          // [{ date, time, value }]
     goals:    [],          // [{ id, label, progress: 0-100 }]
     countdowns: [],        // [{ id, label, date: 'YYYY-MM-DD' }]
+    rewards:  [
+      { id: 'rw1', emoji: '🍕', label: 'Cheat meal',          target: 7,  tracker: 'global_streak',  claimed: 0, history: [] },
+      { id: 'rw2', emoji: '🎮', label: '2h gaming',           target: 10, tracker: 'week_focus',     claimed: 0, history: [] },
+      { id: 'rw3', emoji: '😴', label: 'Grasse mat\' weekend', target: 5,  tracker: 'morning_streak', claimed: 0, history: [] },
+      { id: 'rw4', emoji: '📺', label: 'Soirée Netflix chill', target: 20, tracker: 'week_tasks',     claimed: 0, history: [] },
+      { id: 'rw5', emoji: '🍫', label: 'Carré de chocolat',    target: 3,  tracker: 'global_streak',  claimed: 0, history: [] }
+    ],
     routines: {
       morning: [
         { id: 'rm1', text: 'Réveil sans snooze' },
@@ -238,6 +245,7 @@ function mergeStates(remote, local) {
     energy:     mergeByKey(remote.energy    || [], local.energy    || [], 'id', localNewer),
     goals:      mergeByKey(remote.goals     || [], local.goals     || [], 'id', localNewer),
     countdowns: mergeByKey(remote.countdowns|| [], local.countdowns|| [], 'id', localNewer),
+    rewards:    mergeByKey(remote.rewards   || [], local.rewards   || [], 'id', localNewer),
     routines:   mergeRoutines(remote.routines || {}, local.routines || {}, localNewer),
     _mt: Math.max(remote._mt || 0, local._mt || 0)
   };
@@ -1501,6 +1509,231 @@ function initCountdowns() {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
+// RÉCOMPENSES IRL
+// ═══════════════════════════════════════════════════════════════════════════
+
+const TRACKER_LBL = {
+  global_streak:  'Streak global',
+  week_tasks:     'Tâches semaine',
+  week_habits:    'Habitudes semaine',
+  week_focus:     'Sessions focus semaine',
+  morning_streak: 'Routine matin',
+  evening_streak: 'Routine soir',
+  water_streak:   'Streak eau 8/8'
+};
+
+function startOfWeek() {
+  const d = new Date(); d.setHours(0,0,0,0);
+  const dow = d.getDay() || 7;
+  d.setDate(d.getDate() - (dow - 1));
+  return d;
+}
+
+function isThisWeek(iso) {
+  const sow = startOfWeek();
+  const d = new Date(iso + 'T00:00:00');
+  const diff = (d - sow) / 86400000;
+  return diff >= 0 && diff < 7;
+}
+
+// Calcule le streak global : jours consécutifs (jusqu'à aujourd'hui ou hier) avec au moins 1 action
+function getGlobalStreak() {
+  const has = (iso) => {
+    if (state.tasks.some(t => t.date === iso && t.done)) return true;
+    if (state.habits.some(h => h.completions.includes(iso))) return true;
+    if (state.finance.transactions.some(t => t.date === iso)) return true;
+    if (((state.water||{})[iso] || 0) > 0) return true;
+    if ((state.moods||[]).some(m => m.date === iso)) return true;
+    if ((state.energy||[]).some(e => e.date === iso)) return true;
+    if (((state.routines||{}).completions||{})[iso] && Object.keys(state.routines.completions[iso]).length) return true;
+    if ((state.sleep||[]).some(s => s.date === iso)) return true;
+    return false;
+  };
+  let n = 0;
+  const d = new Date(); d.setHours(0,0,0,0);
+  if (!has(d.toISOString().slice(0,10))) d.setDate(d.getDate() - 1);
+  for (let i = 0; i < 365; i++) {
+    const iso = d.toISOString().slice(0,10);
+    if (has(iso)) { n++; d.setDate(d.getDate() - 1); } else break;
+  }
+  return n;
+}
+
+function getRoutineStreak(type) {
+  // type = 'morning' ou 'evening'
+  const items = (state.routines || {})[type] || [];
+  if (!items.length) return 0;
+  const completions = (state.routines || {}).completions || {};
+  const allDone = (iso) => {
+    const done = completions[iso] || {};
+    return items.every(it => done[it.id]);
+  };
+  let n = 0;
+  const d = new Date(); d.setHours(0,0,0,0);
+  if (!allDone(d.toISOString().slice(0,10))) d.setDate(d.getDate() - 1);
+  for (let i = 0; i < 365; i++) {
+    const iso = d.toISOString().slice(0,10);
+    if (allDone(iso)) { n++; d.setDate(d.getDate() - 1); } else break;
+  }
+  return n;
+}
+
+function getWaterStreak() {
+  let n = 0;
+  const d = new Date(); d.setHours(0,0,0,0);
+  if ((((state.water||{})[d.toISOString().slice(0,10)]) || 0) < WATER_GOAL) d.setDate(d.getDate() - 1);
+  for (let i = 0; i < 365; i++) {
+    const iso = d.toISOString().slice(0,10);
+    if (((state.water||{})[iso] || 0) >= WATER_GOAL) { n++; d.setDate(d.getDate() - 1); } else break;
+  }
+  return n;
+}
+
+function getRewardProgress(reward) {
+  switch (reward.tracker) {
+    case 'global_streak':
+      return getGlobalStreak();
+    case 'week_tasks':
+      return state.tasks.filter(t => t.done && isThisWeek(t.date)).length;
+    case 'week_habits': {
+      // Toutes les habitudes cochées cette semaine, comptées (toutes habitudes confondues)
+      let n = 0;
+      for (const h of state.habits) {
+        for (const c of (h.completions || [])) if (isThisWeek(c)) n++;
+      }
+      return n;
+    }
+    case 'week_focus': {
+      const stored = JSON.parse(localStorage.getItem('pom_sessions') || '{}');
+      let n = 0;
+      for (const iso in stored) if (isThisWeek(iso)) n += stored[iso];
+      return n;
+    }
+    case 'morning_streak': return getRoutineStreak('morning');
+    case 'evening_streak': return getRoutineStreak('evening');
+    case 'water_streak':   return getWaterStreak();
+    default: return 0;
+  }
+}
+
+function renderRewards() {
+  const wrap = document.getElementById('rewards-list');
+  if (!wrap) return;
+  state.rewards = state.rewards || [];
+  if (!state.rewards.length) {
+    wrap.innerHTML = '<div class="empty-state">Aucune récompense — clique sur ＋</div>';
+    return;
+  }
+
+  wrap.innerHTML = state.rewards.map(r => {
+    const progress = getRewardProgress(r);
+    const pct = Math.min(100, Math.round((progress / r.target) * 100));
+    const ready = progress >= r.target;
+    const trackerLbl = TRACKER_LBL[r.tracker] || r.tracker;
+    return `<div class="reward-card${ready ? ' ready' : ''}" data-id="${r.id}">
+      <button class="reward-del" onclick="deleteReward('${r.id}')" title="Supprimer">×</button>
+      ${r.claimed > 0 ? `<span class="reward-claimed-count">×${r.claimed}</span>` : ''}
+      <div class="reward-emoji">${r.emoji}</div>
+      <div class="reward-label">${esc(r.label)}</div>
+      <div class="reward-tracker-lbl">${trackerLbl}</div>
+      <div class="reward-progress-num">${progress}/${r.target}</div>
+      <div class="reward-progress-bar">
+        <div class="reward-progress-fill" style="width:${pct}%"></div>
+      </div>
+      ${ready
+        ? `<button class="reward-claim-btn" onclick="claimReward('${r.id}')">🎉 Je la prends</button>`
+        : ''}
+    </div>`;
+  }).join('');
+}
+
+window.claimReward = function(id) {
+  const r = state.rewards.find(x => x.id === id);
+  if (!r) return;
+  // Animation de célébration
+  const card = document.querySelector(`.reward-card[data-id="${id}"]`);
+  if (card) {
+    card.classList.add('just-claimed');
+    setTimeout(() => card.classList.remove('just-claimed'), 700);
+  }
+  r.claimed = (r.claimed || 0) + 1;
+  r.history = r.history || [];
+  r.history.push(todayStr());
+  // Reset le tracker : pour les streaks, on inscrit la date de claim pour décaler le compteur.
+  // Le tracker repart à zéro automatiquement parce que le streak se calcule à partir d'aujourd'hui.
+  // Pour les compteurs hebdo (week_tasks, week_focus...), ils repartent à 0 lundi prochain.
+  save();
+  setTimeout(renderRewards, 50);  // re-render après animation
+};
+
+window.deleteReward = function(id) {
+  state.rewards = state.rewards.filter(r => r.id !== id);
+  save(); renderRewards();
+};
+
+// Modal
+let pickedEmoji = '🍕';
+
+function openRewardModal() {
+  pickedEmoji = '🍕';
+  document.getElementById('reward-label').value = '';
+  document.getElementById('reward-target').value = 7;
+  document.getElementById('reward-tracker').value = 'global_streak';
+  document.querySelectorAll('.emoji-pick').forEach(b => {
+    b.classList.toggle('sel', b.dataset.emoji === pickedEmoji);
+  });
+  document.getElementById('reward-modal').hidden = false;
+  document.getElementById('reward-label').focus();
+}
+
+function closeRewardModal() {
+  document.getElementById('reward-modal').hidden = true;
+}
+
+function saveReward() {
+  const label   = document.getElementById('reward-label').value.trim();
+  const tracker = document.getElementById('reward-tracker').value;
+  const target  = parseInt(document.getElementById('reward-target').value, 10);
+  if (!label || !target || target < 1) return;
+  state.rewards = state.rewards || [];
+  state.rewards.push({
+    id: uid(),
+    emoji: pickedEmoji,
+    label, target, tracker,
+    claimed: 0,
+    history: []
+  });
+  save(); renderRewards(); closeRewardModal();
+}
+
+function initRewards() {
+  const add    = document.getElementById('btn-add-reward');
+  const save_  = document.getElementById('btn-save-reward');
+  const cancel = document.getElementById('btn-cancel-reward');
+  const label  = document.getElementById('reward-label');
+  const modal  = document.getElementById('reward-modal');
+
+  if (add)    add.onclick    = openRewardModal;
+  if (save_)  save_.onclick  = saveReward;
+  if (cancel) cancel.onclick = closeRewardModal;
+
+  // Emoji picker dans le modal
+  document.querySelectorAll('.emoji-pick').forEach(btn => {
+    btn.onclick = (e) => {
+      pickedEmoji = btn.dataset.emoji;
+      document.querySelectorAll('.emoji-pick').forEach(b => b.classList.remove('sel'));
+      btn.classList.add('sel');
+    };
+  });
+
+  if (label) label.onkeydown = e => {
+    if (e.key === 'Enter')  { e.preventDefault(); saveReward(); }
+    if (e.key === 'Escape') { e.preventDefault(); closeRewardModal(); }
+  };
+  if (modal) modal.onclick = e => { if (e.target === modal) closeRewardModal(); };
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
 // renderAll
 // ═══════════════════════════════════════════════════════════════════════════
 
@@ -1526,6 +1759,7 @@ function renderAll() {
   renderWeek();
   renderGoals();
   renderCountdowns();
+  renderRewards();
 }
 
 // ── Service Worker ────────────────────────────────────────────────────────
@@ -1552,6 +1786,10 @@ document.addEventListener('DOMContentLoaded', async () => {
   state.energy     = state.energy     || [];
   state.goals      = state.goals      || [];
   state.countdowns = state.countdowns || [];
+  // Si pas de rewards (premier lancement après mise à jour), seeder les defaults
+  if (!state.rewards || !state.rewards.length) {
+    state.rewards = defaultState().rewards;
+  }
   if (!state.routines || !state.routines.morning) {
     state.routines = defaultState().routines;
   }
@@ -1571,9 +1809,10 @@ document.addEventListener('DOMContentLoaded', async () => {
   initJournal();
   initGoals();
   initCountdowns();
+  initRewards();
 
   // FAILSAFE : force fermer toutes les modals au boot
-  ['habit-modal', 'goal-modal', 'count-modal'].forEach(id => {
+  ['habit-modal', 'goal-modal', 'count-modal', 'reward-modal'].forEach(id => {
     const m = document.getElementById(id);
     if (m) m.hidden = true;
   });
