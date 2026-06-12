@@ -1,7 +1,7 @@
 {
-  "name": "Dashboard Perso",
-  "short_name": "Dashboard",
-  "description": "Mon tableau de bord quotidien — tâches, habitudes, finances, bien-être",
+  "name": "Pulse",
+  "short_name": "Pulse",
+  "description": "Le rythme de ta journée — tâches, habitudes, finances, focus, bien-être",
   "start_url": "./index.html",
   "display": "standalone",
   "background_color": "#F5F5F7",
