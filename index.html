@@ -95,26 +95,15 @@
 
       <div class="bento bento-today">
 
-        <!-- HERO — résumé du jour -->
-        <div class="cell hero">
-          <div class="hero-stats">
-            <div class="hero-stat" id="hero-tasks">
-              <div class="hero-stat-num">0/0</div>
-              <div class="hero-stat-lbl">Tâches</div>
-            </div>
-            <div class="hero-stat" id="hero-habits">
-              <div class="hero-stat-num">0/0</div>
-              <div class="hero-stat-lbl">Habitudes</div>
-            </div>
-            <div class="hero-stat" id="hero-water">
-              <div class="hero-stat-num">0</div>
-              <div class="hero-stat-lbl">Verres d'eau</div>
-            </div>
-            <div class="hero-stat" id="hero-focus">
-              <div class="hero-stat-num">0</div>
-              <div class="hero-stat-lbl">Sessions focus</div>
-            </div>
+        <!-- HERO greeting -->
+        <div class="cell hero today-hero">
+          <div class="hero-row-top">
+            <div class="hero-date" id="hero-date"></div>
+            <div class="hero-streak" id="hero-streak"></div>
           </div>
+          <div class="hero-greeting" id="hero-greeting"></div>
+          <div class="hero-summary" id="hero-summary"></div>
+          <div class="hero-quick" id="hero-quick"></div>
         </div>
 
         <!-- TÂCHES — large -->
@@ -213,46 +202,6 @@
             <span class="muted" id="week-lbl"></span>
           </div>
           <div class="week-grid" id="week-grid"></div>
-        </div>
-
-        <!-- OBJECTIFS DU MOIS — medium -->
-        <div class="cell goals-cell">
-          <div class="cell-head">
-            <h3>Objectifs du mois</h3>
-            <button class="icon-btn" id="btn-add-goal" title="Ajouter">＋</button>
-          </div>
-          <div id="goals-list"></div>
-        </div>
-
-        <!-- COMPTE À REBOURS — medium -->
-        <div class="cell countdowns-cell">
-          <div class="cell-head">
-            <h3>Compte à rebours</h3>
-            <button class="icon-btn" id="btn-add-countdown" title="Ajouter">＋</button>
-          </div>
-          <div id="countdowns-list"></div>
-        </div>
-
-        <!-- RÉCOMPENSES — wide -->
-        <div class="cell rewards-cell">
-          <div class="cell-head">
-            <h3>Récompenses</h3>
-            <button class="icon-btn" id="btn-add-reward" title="Ajouter">＋</button>
-          </div>
-          <div id="rewards-list" class="rewards-grid"></div>
-        </div>
-
-        <!-- NOTIFICATIONS — wide -->
-        <div class="cell notifs-cell">
-          <div class="cell-head">
-            <h3>Notifications</h3>
-            <div class="notifs-actions">
-              <button class="ghost-btn" id="btn-enable-notifs">Activer les notifs</button>
-              <button class="ghost-btn" id="btn-test-notif" disabled>Test</button>
-              <button class="icon-btn" id="btn-add-notif" title="Ajouter un rappel">＋</button>
-            </div>
-          </div>
-          <div id="notifs-list"></div>
         </div>
 
         <!-- INBOX / CAPTURE RAPIDE — wide -->
@@ -428,6 +377,46 @@
             <div class="heat-lvl heat-4"></div>
             <span>Plus</span>
           </div>
+        </div>
+
+        <!-- Récompenses IRL -->
+        <div class="cell wide rewards-cell">
+          <div class="cell-head">
+            <h3>Récompenses</h3>
+            <button class="icon-btn" id="btn-add-reward" title="Ajouter">＋</button>
+          </div>
+          <div id="rewards-list" class="rewards-grid"></div>
+        </div>
+
+        <!-- Objectifs du mois -->
+        <div class="cell goals-cell">
+          <div class="cell-head">
+            <h3>Objectifs du mois</h3>
+            <button class="icon-btn" id="btn-add-goal" title="Ajouter">＋</button>
+          </div>
+          <div id="goals-list"></div>
+        </div>
+
+        <!-- Compte à rebours -->
+        <div class="cell countdowns-cell">
+          <div class="cell-head">
+            <h3>Compte à rebours</h3>
+            <button class="icon-btn" id="btn-add-countdown" title="Ajouter">＋</button>
+          </div>
+          <div id="countdowns-list"></div>
+        </div>
+
+        <!-- Notifications -->
+        <div class="cell wide notifs-cell">
+          <div class="cell-head">
+            <h3>Notifications</h3>
+            <div class="notifs-actions">
+              <button class="ghost-btn" id="btn-enable-notifs">Activer les notifs</button>
+              <button class="ghost-btn" id="btn-test-notif" disabled>Test</button>
+              <button class="icon-btn" id="btn-add-notif" title="Ajouter un rappel">＋</button>
+            </div>
+          </div>
+          <div id="notifs-list"></div>
         </div>
 
       </div>

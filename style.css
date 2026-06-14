@@ -403,7 +403,7 @@ button { cursor: pointer; background: none; border: none; }
   color: var(--accent);
 }
 
-/* Hero — résumé du jour avec gradient mesh */
+/* Hero — par défaut gradient mesh */
 .cell.hero {
   grid-column: span 12;
   padding: 24px 28px;
@@ -415,6 +415,109 @@ button { cursor: pointer; background: none; border: none; }
   border: 1px solid var(--line);
   position: relative;
   overflow: hidden;
+}
+
+/* Today hero greeting (style "vraie app") */
+.today-hero {
+  padding: 28px 28px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.hero-row-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 6px;
+  position: relative;
+  z-index: 1;
+}
+
+.hero-date {
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .08em;
+  color: var(--ink-sec);
+}
+
+.hero-streak {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--amber);
+  background: rgba(255, 159, 10, .15);
+  padding: 4px 10px;
+  border-radius: 100px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.hero-greeting {
+  font-size: 34px;
+  font-weight: 800;
+  letter-spacing: -.03em;
+  line-height: 1.1;
+  color: var(--ink);
+  margin: 4px 0 14px;
+  position: relative;
+  z-index: 1;
+}
+
+.hero-summary {
+  font-size: 17px;
+  line-height: 1.45;
+  color: var(--ink-sec);
+  margin-bottom: 18px;
+  position: relative;
+  z-index: 1;
+}
+
+.hero-summary strong {
+  color: var(--ink);
+  font-weight: 700;
+}
+.hero-summary .accent { color: var(--accent); font-weight: 700; }
+.hero-summary .green  { color: var(--green);  font-weight: 700; }
+.hero-summary .amber  { color: var(--amber);  font-weight: 700; }
+
+.hero-quick {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  position: relative;
+  z-index: 1;
+}
+
+.hero-quick-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  border-radius: 100px;
+  background: var(--card-2);
+  border: 1px solid var(--line);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+  transition: transform .15s, background .15s;
+}
+.hero-quick-item:hover {
+  transform: translateY(-1px);
+  background: var(--accent-bg);
+}
+
+.hero-quick-item .emoji { font-size: 16px; }
+.hero-quick-item .lbl   { color: var(--ink-sec); font-weight: 500; }
+
+/* Mobile : un peu plus compact */
+@media (max-width: 640px) {
+  .today-hero { padding: 22px 18px 18px; }
+  .hero-greeting { font-size: 26px; }
+  .hero-summary  { font-size: 15px; }
+  .hero-quick-item { padding: 6px 10px; font-size: 12px; }
 }
 
 .cell.hero::before {

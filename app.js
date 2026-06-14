@@ -464,23 +464,86 @@ function initCitation() {
 
 function renderHero() {
   const t = todayStr();
+  const now = new Date();
+  const hour = now.getHours();
+
+  // Données du jour
   const tasksToday = state.tasks.filter(x => x.date === t);
-  const tasksDone  = tasksToday.filter(x => x.done).length;
+  const tasksRemaining = tasksToday.filter(x => !x.done).length;
   const habitsDone = state.habits.filter(h => h.completions.includes(t)).length;
-  const water      = (state.water || {})[t] || 0;
+  const habitsRemaining = state.habits.length - habitsDone;
+  const water = (state.water || {})[t] || 0;
   const focusCount = (JSON.parse(localStorage.getItem('pom_sessions') || '{}'))[t] || 0;
+  const streak = getGlobalStreak();
 
-  setHeroStat('hero-tasks',  `${tasksDone}/${tasksToday.length || 0}`, 'Tâches');
-  setHeroStat('hero-habits', `${habitsDone}/${state.habits.length}`,  'Habitudes');
-  setHeroStat('hero-water',  `${water}`,                              'Verres d\'eau');
-  setHeroStat('hero-focus',  `${focusCount}`,                         'Sessions focus');
-}
+  // Date
+  const dateEl = document.getElementById('hero-date');
+  if (dateEl) dateEl.textContent = now.toLocaleDateString('fr-FR', {
+    weekday: 'long', day: 'numeric', month: 'long'
+  });
 
-function setHeroStat(id, num, lbl) {
-  const el = document.getElementById(id);
-  if (!el) return;
-  el.querySelector('.hero-stat-num').textContent = num;
-  el.querySelector('.hero-stat-lbl').textContent = lbl;
+  // Streak badge
+  const streakEl = document.getElementById('hero-streak');
+  if (streakEl) {
+    if (streak >= 2) {
+      streakEl.innerHTML = `🔥 ${streak} jours d'affilée`;
+      streakEl.style.display = '';
+    } else {
+      streakEl.style.display = 'none';
+    }
+  }
+
+  // Greeting selon l'heure
+  let greeting;
+  if (hour < 6)       greeting = "Encore debout 🌙";
+  else if (hour < 12) greeting = "Bonjour ☀️";
+  else if (hour < 14) greeting = "Bon appétit 🍴";
+  else if (hour < 18) greeting = "Bon aprem 👋";
+  else if (hour < 22) greeting = "Bonsoir 🌆";
+  else                greeting = "Bonne nuit 🌙";
+  const greetEl = document.getElementById('hero-greeting');
+  if (greetEl) greetEl.textContent = greeting;
+
+  // Résumé contextualisé
+  const summaryEl = document.getElementById('hero-summary');
+  if (summaryEl) {
+    const parts = [];
+    if (tasksRemaining > 0) {
+      parts.push(`<span class="accent">${tasksRemaining} tâche${tasksRemaining>1?'s':''}</span> à finir`);
+    } else if (tasksToday.length > 0) {
+      parts.push(`toutes tes tâches sont <span class="green">faites ✓</span>`);
+    }
+    if (habitsRemaining > 0) {
+      parts.push(`<span class="amber">${habitsRemaining} habitude${habitsRemaining>1?'s':''}</span> à cocher`);
+    } else if (state.habits.length > 0) {
+      parts.push(`tes <span class="green">${state.habits.length} habitudes</span> sont OK 🎯`);
+    }
+    if (parts.length === 0) {
+      summaryEl.innerHTML = `Profite de ta journée.`;
+    } else {
+      summaryEl.innerHTML = `Tu as ${parts.join(', ')}.`;
+    }
+  }
+
+  // Quick stats actionnables
+  const quickEl = document.getElementById('hero-quick');
+  if (quickEl) {
+    const items = [];
+    items.push(`<div class="hero-quick-item" onclick="setView('today');setTimeout(()=>document.querySelector('.water-cell')?.scrollIntoView({behavior:'smooth',block:'center'}),50)">
+      <span class="emoji">💧</span><span>${water}/8</span><span class="lbl">eau</span>
+    </div>`);
+    items.push(`<div class="hero-quick-item">
+      <span class="emoji">🎯</span><span>${focusCount}</span><span class="lbl">focus</span>
+    </div>`);
+    const todayMood = (state.moods || []).find(m => m.date === t);
+    if (todayMood) {
+      const moodEmojis = ['😞','😕','😐','🙂','😄'];
+      items.push(`<div class="hero-quick-item">
+        <span class="emoji">${moodEmojis[todayMood.value-1]}</span><span class="lbl">humeur</span>
+      </div>`);
+    }
+    quickEl.innerHTML = items.join('');
+  }
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
