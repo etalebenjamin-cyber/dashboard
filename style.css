@@ -972,6 +972,237 @@ input::placeholder, textarea::placeholder {
 }
 
 /* ═══════════════════════════════════════════════════════════════════════
+   STATS : HEATMAP ANNUELLE + RECAP HEBDO
+   ═══════════════════════════════════════════════════════════════════════ */
+
+.bento-stats { grid-template-columns: repeat(12, 1fr); }
+.bento-stats .cell.hero    { grid-column: span 12; }
+.bento-stats .heatmap-cell { grid-column: span 12; }
+
+/* ── Heatmap année ──────────────────────────────────────── */
+
+.heatmap-wrap {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  padding: 4px 0;
+}
+
+.heatmap-months {
+  display: grid;
+  grid-template-columns: 22px repeat(53, 14px);
+  gap: 0 3px;
+  font-size: 10px;
+  color: var(--ink-mut);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: .04em;
+  margin-bottom: 4px;
+  margin-left: 0;
+}
+.heatmap-months span { white-space: nowrap; }
+
+.heatmap-rows { display: flex; gap: 4px; }
+
+.heatmap-dow {
+  display: grid;
+  grid-template-rows: repeat(7, 14px);
+  gap: 3px;
+  font-size: 9.5px;
+  color: var(--ink-mut);
+  font-weight: 600;
+  width: 18px;
+  text-align: right;
+  align-items: center;
+}
+
+.heatmap-grid {
+  display: grid;
+  grid-template-columns: repeat(53, 14px);
+  grid-template-rows: repeat(7, 14px);
+  grid-auto-flow: column;
+  gap: 3px;
+}
+
+.heat-cell {
+  width: 14px; height: 14px;
+  border-radius: 3px;
+  background: var(--line-soft);
+  transition: transform .12s, outline .12s;
+  cursor: pointer;
+}
+.heat-cell:hover {
+  transform: scale(1.4);
+  outline: 1.5px solid var(--ink);
+  outline-offset: 1px;
+  z-index: 2;
+  position: relative;
+}
+.heat-cell.today { outline: 2px solid var(--accent); outline-offset: 1px; }
+
+/* 5 niveaux (palette indigo→magenta du brand) */
+.heat-cell.heat-0 { background: var(--line); }
+.heat-cell.heat-1 { background: rgba(94, 92, 230, .25); }
+.heat-cell.heat-2 { background: rgba(94, 92, 230, .55); }
+.heat-cell.heat-3 { background: rgba(124, 58, 237, .85); }
+.heat-cell.heat-4 { background: linear-gradient(135deg, #7C3AED, #DB2777); }
+
+@media (prefers-color-scheme: dark) {
+  .heat-cell.heat-0 { background: rgba(255,255,255,.06); }
+  .heat-cell.heat-1 { background: rgba(125, 122, 255, .30); }
+  .heat-cell.heat-2 { background: rgba(125, 122, 255, .55); }
+  .heat-cell.heat-3 { background: rgba(167, 139, 250, .85); }
+}
+
+.heatmap-legend {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  justify-content: flex-end;
+  font-size: 10.5px;
+  color: var(--ink-mut);
+  margin-top: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: .04em;
+}
+.heat-lvl {
+  width: 12px; height: 12px;
+  border-radius: 3px;
+}
+.heat-lvl.heat-0 { background: var(--line); }
+.heat-lvl.heat-1 { background: rgba(94, 92, 230, .25); }
+.heat-lvl.heat-2 { background: rgba(94, 92, 230, .55); }
+.heat-lvl.heat-3 { background: rgba(124, 58, 237, .85); }
+.heat-lvl.heat-4 { background: linear-gradient(135deg, #7C3AED, #DB2777); }
+
+/* ── Recap hebdo ──────────────────────────────────────── */
+
+.recap-hero {
+  background:
+    radial-gradient(circle at 100% 0%, rgba(255, 100, 130, .18) 0%, transparent 45%),
+    radial-gradient(circle at 0% 100%, rgba(94, 92, 230, .15) 0%, transparent 45%),
+    var(--card);
+}
+
+.recap-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 18px;
+}
+
+.recap-head h3 {
+  font-size: 22px;
+  font-weight: 800;
+  letter-spacing: -.02em;
+  color: var(--ink);
+  text-transform: none;
+}
+.recap-head h3::before { display: none; }
+
+.recap-nav { display: flex; gap: 4px; }
+
+.recap-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.recap-stat {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.recap-stat-num {
+  font-size: 30px;
+  font-weight: 800;
+  letter-spacing: -.03em;
+  line-height: 1;
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+}
+.recap-stat-num.green { color: var(--green); }
+.recap-stat-num.pink  { color: var(--c-pom); }
+.recap-stat-num.water { color: var(--c-water); }
+.recap-stat-num.amber { color: var(--amber); }
+.recap-stat-num.indigo{ color: var(--accent); }
+.recap-stat-num.huge  { font-size: 38px; }
+
+.recap-stat-lbl {
+  font-size: 11px;
+  color: var(--ink-sec);
+  text-transform: uppercase;
+  letter-spacing: .06em;
+  font-weight: 700;
+}
+
+.recap-section {
+  border-top: 1px solid var(--line-soft);
+  padding-top: 16px;
+  margin-top: 4px;
+}
+
+.recap-section-title {
+  font-size: 11px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: .08em;
+  color: var(--ink-sec);
+  margin-bottom: 10px;
+}
+
+.recap-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.recap-line {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 13.5px;
+}
+.recap-dot {
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.recap-line-name { flex: 1; color: var(--ink); }
+.recap-line-val {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--ink-sec);
+  font-variant-numeric: tabular-nums;
+}
+
+.recap-message {
+  margin-top: 16px;
+  padding: 14px 16px;
+  background: linear-gradient(135deg, var(--accent-bg), rgba(255, 100, 130, .12));
+  border-radius: var(--r-l);
+  font-size: 14px;
+  color: var(--ink);
+  line-height: 1.5;
+}
+
+/* Mobile heatmap : un peu plus petite */
+@media (max-width: 640px) {
+  .bento-stats .cell.hero, .bento-stats .heatmap-cell { grid-column: span 12; }
+  .heat-cell { width: 11px; height: 11px; }
+  .heatmap-grid {
+    grid-template-columns: repeat(53, 11px);
+    grid-template-rows: repeat(7, 11px);
+  }
+  .heatmap-months { grid-template-columns: 18px repeat(53, 11px); }
+  .heatmap-dow { grid-template-rows: repeat(7, 11px); width: 14px; font-size: 8.5px; }
+  .recap-head h3 { font-size: 18px; }
+  .recap-stat-num { font-size: 24px; }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
    NOTIFICATIONS / RAPPELS
    ═══════════════════════════════════════════════════════════════════════ */
 

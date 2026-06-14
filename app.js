@@ -389,7 +389,8 @@ const VIEW_TITLES = {
   habits:   "Habitudes",
   finance:  "Finances",
   wellness: "Bien-être",
-  journal:  "Journal"
+  journal:  "Journal",
+  stats:    "Stats"
 };
 
 function setView(name) {
@@ -1922,6 +1923,271 @@ function initRewards() {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
+// STATS : HEATMAP ANNUELLE + RECAP HEBDO
+// ═══════════════════════════════════════════════════════════════════════════
+
+function getDayActivityScore(iso) {
+  let s = 0;
+  s += state.tasks.filter(t => t.date === iso && t.done).length;
+  s += state.habits.filter(h => h.completions.includes(iso)).length;
+  if ((state.moods   || []).some(m => m.date === iso))   s++;
+  if ((state.sleep   || []).some(sl => sl.date === iso)) s++;
+  if ((state.weight  || []).some(w => w.date === iso))   s++;
+  if ((state.journal || []).some(j => j.date === iso))   s++;
+  const pomStored = JSON.parse(localStorage.getItem('pom_sessions') || '{}');
+  s += pomStored[iso] || 0;
+  if (((state.water || {})[iso] || 0) >= 4) s++;
+  const completions = ((state.routines || {}).completions || {})[iso] || {};
+  if (Object.keys(completions).length) s += Math.ceil(Object.keys(completions).length / 4);
+  return s;
+}
+
+function activityLevel(score) {
+  if (score === 0) return 0;
+  if (score <= 2)  return 1;
+  if (score <= 5)  return 2;
+  if (score <= 8)  return 3;
+  return 4;
+}
+
+function renderHeatmap() {
+  const grid = document.getElementById('heatmap-grid');
+  const months = document.getElementById('heatmap-months');
+  const totalLbl = document.getElementById('heatmap-total');
+  if (!grid) return;
+
+  const year = new Date().getFullYear();
+  const startDate = new Date(year, 0, 1);
+  const endDate = new Date(year, 11, 31);
+
+  // Décaler le début à un lundi
+  const dow0 = startDate.getDay() || 7;  // 1=lundi...7=dim
+  const gridStart = new Date(startDate);
+  gridStart.setDate(startDate.getDate() - (dow0 - 1));
+
+  const today = todayStr();
+  let totalActions = 0;
+  const cells = [];
+  const monthCols = {};  // mois → colonne où il commence
+
+  for (let i = 0; i < 53 * 7; i++) {
+    const d = new Date(gridStart);
+    d.setDate(gridStart.getDate() + i);
+    const iso = d.toISOString().slice(0, 10);
+
+    // Hors année courante → cellule invisible
+    if (d.getFullYear() !== year) {
+      cells.push('<div class="heat-cell" style="visibility:hidden"></div>');
+      continue;
+    }
+    const score = getDayActivityScore(iso);
+    totalActions += score;
+    const lvl = activityLevel(score);
+    const isT = iso === today;
+    const cls = `heat-cell heat-${lvl}${isT ? ' today' : ''}`;
+    const dateLbl = d.toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' });
+    cells.push(`<div class="${cls}" title="${dateLbl} — ${score} action${score>1?'s':''}" data-iso="${iso}"></div>`);
+
+    // Marquer début de mois (1er du mois)
+    if (d.getDate() === 1) {
+      const col = Math.floor(i / 7);
+      monthCols[d.getMonth()] = col;
+    }
+  }
+
+  grid.innerHTML = cells.join('');
+
+  if (months) {
+    const monthNames = ['Jan','Fév','Mar','Avr','Mai','Juin','Juil','Août','Sep','Oct','Nov','Déc'];
+    let html = '<span></span>';
+    for (let c = 0; c < 53; c++) {
+      const m = Object.entries(monthCols).find(([_, col]) => col === c);
+      html += `<span>${m ? monthNames[parseInt(m[0],10)] : ''}</span>`;
+    }
+    months.innerHTML = html;
+  }
+
+  if (totalLbl) totalLbl.textContent = `${totalActions} actions cette année`;
+}
+
+// ── Recap hebdo ─────────────────────────────────────────────────────────
+
+let recapWeekOffset = 0;  // 0 = cette semaine, -1 = semaine d'avant, etc.
+
+function getWeekRange(offset = 0) {
+  const today = new Date(); today.setHours(0,0,0,0);
+  const dow = today.getDay() || 7;
+  const monday = new Date(today);
+  monday.setDate(today.getDate() - (dow - 1) + offset * 7);
+  const sunday = new Date(monday);
+  sunday.setDate(monday.getDate() + 6);
+  return { monday, sunday };
+}
+
+function getWeekDates(offset = 0) {
+  const { monday } = getWeekRange(offset);
+  return Array.from({length: 7}, (_, i) => {
+    const d = new Date(monday); d.setDate(monday.getDate() + i);
+    return d.toISOString().slice(0,10);
+  });
+}
+
+function buildRecap(offset) {
+  const dates = getWeekDates(offset);
+  const { monday, sunday } = getWeekRange(offset);
+
+  // Stats
+  const activeDays = dates.filter(d => getDayActivityScore(d) > 0).length;
+  const tasksDone = state.tasks.filter(t => dates.includes(t.date) && t.done).length;
+
+  const habitsDoneCount = {};
+  for (const d of dates) {
+    for (const h of state.habits) {
+      if (h.completions.includes(d)) {
+        habitsDoneCount[h.id] = (habitsDoneCount[h.id] || 0) + 1;
+      }
+    }
+  }
+  const totalHabits = Object.values(habitsDoneCount).reduce((s,n) => s+n, 0);
+
+  const pomStored = JSON.parse(localStorage.getItem('pom_sessions') || '{}');
+  const focusSessions = dates.reduce((s, d) => s + (pomStored[d] || 0), 0);
+  const focusHours = ((focusSessions * 25) / 60).toFixed(1);
+
+  const waterTotal = dates.reduce((s, d) => s + ((state.water||{})[d] || 0), 0);
+
+  const moodsList = (state.moods || []).filter(m => dates.includes(m.date));
+  const moodAvg = moodsList.length
+    ? (moodsList.reduce((s, m) => s + m.value, 0) / moodsList.length)
+    : null;
+  const moodEmojiList = ['😞','😕','😐','🙂','😄'];
+  const moodEmoji = moodAvg ? moodEmojiList[Math.round(moodAvg) - 1] : '—';
+
+  const totalExpenses = state.finance.transactions
+    .filter(t => dates.includes(t.date) && t.type === 'expense')
+    .reduce((s, t) => s + t.amount, 0);
+
+  // Top habitudes
+  const topHabits = state.habits
+    .map(h => ({ h, n: habitsDoneCount[h.id] || 0 }))
+    .filter(x => x.n > 0)
+    .sort((a, b) => b.n - a.n)
+    .slice(0, 5);
+
+  const missedHabits = state.habits
+    .map(h => ({ h, n: habitsDoneCount[h.id] || 0 }))
+    .filter(x => x.n < 3)
+    .slice(0, 3);
+
+  return {
+    monday, sunday, dates,
+    activeDays, tasksDone, totalHabits,
+    focusSessions, focusHours,
+    waterTotal,
+    moodAvg, moodEmoji,
+    totalExpenses,
+    topHabits, missedHabits
+  };
+}
+
+function recapMessage(r) {
+  if (r.activeDays === 7) {
+    return `🔥 Semaine PARFAITE — 7 jours d'affilée actifs. T'es une machine.`;
+  } else if (r.activeDays >= 5) {
+    return `💪 ${r.activeDays}/7 jours actifs. Solide semaine, continue comme ça.`;
+  } else if (r.activeDays >= 3) {
+    return `👌 ${r.activeDays}/7 jours actifs. Pas mal — vise un peu plus haut la prochaine.`;
+  } else if (r.activeDays > 0) {
+    return `🌱 ${r.activeDays}/7 jours actifs. Y a de la marge — c'est l'occasion de remonter la pente cette semaine.`;
+  } else {
+    return `😴 Aucune activité cette semaine — c'est tout nouveau ou tu reviens d'un break. Allez, on s'y remet ?`;
+  }
+}
+
+function renderRecap() {
+  const content = document.getElementById('recap-content');
+  const lblEl   = document.getElementById('recap-week-lbl');
+  if (!content) return;
+
+  const r = buildRecap(recapWeekOffset);
+  const start = r.monday.toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' });
+  const end   = r.sunday.toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' });
+  if (lblEl) {
+    lblEl.textContent = recapWeekOffset === 0
+      ? `Cette semaine`
+      : `Semaine du ${start}`;
+  }
+
+  const topHabitsHtml = r.topHabits.length ? r.topHabits.map(({h, n}) => `
+    <div class="recap-line">
+      <span class="recap-dot" style="background:${h.color}"></span>
+      <span class="recap-line-name">${esc(h.name)}</span>
+      <span class="recap-line-val">${n}/7</span>
+    </div>`).join('') : '<div class="empty-state" style="padding:8px 0">Aucune habitude cochée cette semaine</div>';
+
+  const missedHtml = r.missedHabits.length ? r.missedHabits.map(({h, n}) => `
+    <div class="recap-line">
+      <span class="recap-dot" style="background:${h.color}"></span>
+      <span class="recap-line-name">${esc(h.name)}</span>
+      <span class="recap-line-val" style="color:var(--red)">${n}/7</span>
+    </div>`).join('') : '<div class="empty-state" style="padding:8px 0">T\'as touché à toutes tes habitudes 💪</div>';
+
+  content.innerHTML = `
+    <div class="recap-grid">
+      <div class="recap-stat">
+        <span class="recap-stat-num huge indigo">${r.activeDays}<span style="font-size:.5em;font-weight:600;color:var(--ink-mut)">/7</span></span>
+        <span class="recap-stat-lbl">Jours actifs</span>
+      </div>
+      <div class="recap-stat">
+        <span class="recap-stat-num green">${r.tasksDone}</span>
+        <span class="recap-stat-lbl">Tâches faites</span>
+      </div>
+      <div class="recap-stat">
+        <span class="recap-stat-num">${r.totalHabits}</span>
+        <span class="recap-stat-lbl">Habitudes cochées</span>
+      </div>
+      <div class="recap-stat">
+        <span class="recap-stat-num pink">${r.focusHours}<span style="font-size:.5em;font-weight:600;color:var(--ink-mut)">h</span></span>
+        <span class="recap-stat-lbl">Focus (${r.focusSessions} sessions)</span>
+      </div>
+      <div class="recap-stat">
+        <span class="recap-stat-num water">${r.waterTotal}</span>
+        <span class="recap-stat-lbl">Verres d'eau</span>
+      </div>
+      <div class="recap-stat">
+        <span class="recap-stat-num amber">${r.moodEmoji}</span>
+        <span class="recap-stat-lbl">${r.moodAvg ? `Humeur ${r.moodAvg.toFixed(1)}/5` : 'Humeur non loggée'}</span>
+      </div>
+      <div class="recap-stat">
+        <span class="recap-stat-num" style="color:var(--red)">${fmtAmount(r.totalExpenses)}<span style="font-size:.5em;font-weight:600;color:var(--ink-mut)">€</span></span>
+        <span class="recap-stat-lbl">Dépenses</span>
+      </div>
+    </div>
+
+    <div class="recap-section">
+      <div class="recap-section-title">🏆 Top habitudes</div>
+      <div class="recap-list">${topHabitsHtml}</div>
+    </div>
+
+    <div class="recap-section">
+      <div class="recap-section-title">⚠️ Habitudes à rattraper</div>
+      <div class="recap-list">${missedHtml}</div>
+    </div>
+
+    <div class="recap-message">${recapMessage(r)}</div>
+  `;
+}
+
+function initStats() {
+  const prev = document.getElementById('recap-prev');
+  const next = document.getElementById('recap-next');
+  if (prev) prev.onclick = () => { recapWeekOffset--; renderRecap(); };
+  if (next) next.onclick = () => {
+    if (recapWeekOffset < 0) { recapWeekOffset++; renderRecap(); }
+  };
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
 // renderAll
 // ═══════════════════════════════════════════════════════════════════════════
 
@@ -1949,6 +2215,8 @@ function renderAll() {
   renderCountdowns();
   renderRewards();
   renderNotifs();
+  renderHeatmap();
+  renderRecap();
 }
 
 // ── Service Worker ────────────────────────────────────────────────────────
@@ -2012,6 +2280,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   initCountdowns();
   initRewards();
   initNotifs();
+  initStats();
 
   // Migration manquante : notifs
   state.notifs = state.notifs || [];

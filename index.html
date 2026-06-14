@@ -57,6 +57,10 @@
         <span class="nav-ico">✎</span>
         <span class="nav-lbl">Journal</span>
       </button>
+      <button class="nav-item" data-view="stats">
+        <span class="nav-ico">▦</span>
+        <span class="nav-lbl">Stats</span>
+      </button>
     </nav>
 
     <div class="sidebar-foot">
@@ -376,6 +380,54 @@
         <div class="cell wide">
           <div class="cell-head"><h3>Énergie cette semaine</h3></div>
           <div id="energy-week"></div>
+        </div>
+
+      </div>
+    </section>
+
+
+    <!-- ─────────────────────────────────────── VIEW : STATS -->
+    <section class="view" id="view-stats" hidden>
+      <div class="bento bento-stats">
+
+        <!-- Récap hebdo -->
+        <div class="cell hero recap-hero">
+          <div class="recap-head">
+            <h3 id="recap-week-lbl">Cette semaine</h3>
+            <div class="recap-nav">
+              <button class="ghost-btn" id="recap-prev" title="Semaine précédente">←</button>
+              <button class="ghost-btn" id="recap-next" title="Semaine suivante">→</button>
+            </div>
+          </div>
+          <div id="recap-content"></div>
+        </div>
+
+        <!-- Heatmap annuelle -->
+        <div class="cell wide heatmap-cell">
+          <div class="cell-head">
+            <h3>Année 2026 — chaque jour, chaque action compte</h3>
+            <span class="muted" id="heatmap-total"></span>
+          </div>
+          <div class="heatmap-wrap">
+            <div class="heatmap-months" id="heatmap-months"></div>
+            <div class="heatmap-rows">
+              <div class="heatmap-dow">
+                <span></span>
+                <span>L</span><span></span><span>M</span>
+                <span></span><span>V</span><span></span>
+              </div>
+              <div class="heatmap-grid" id="heatmap-grid"></div>
+            </div>
+          </div>
+          <div class="heatmap-legend">
+            <span>Moins</span>
+            <div class="heat-lvl heat-0"></div>
+            <div class="heat-lvl heat-1"></div>
+            <div class="heat-lvl heat-2"></div>
+            <div class="heat-lvl heat-3"></div>
+            <div class="heat-lvl heat-4"></div>
+            <span>Plus</span>
+          </div>
         </div>
 
       </div>
