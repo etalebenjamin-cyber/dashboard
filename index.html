@@ -51,11 +51,11 @@
       </button>
       <button class="nav-item" data-view="wellness">
         <span class="nav-ico">♡</span>
-        <span class="nav-lbl">Bien-être</span>
+        <span class="nav-lbl">Santé</span>
       </button>
-      <button class="nav-item" data-view="journal">
-        <span class="nav-ico">✎</span>
-        <span class="nav-lbl">Journal</span>
+      <button class="nav-item" data-view="universe">
+        <span class="nav-ico">✦</span>
+        <span class="nav-lbl">Univers</span>
       </button>
       <button class="nav-item" data-view="stats">
         <span class="nav-ico">▦</span>
@@ -177,24 +177,6 @@
           <div class="energy-history" id="energy-history"></div>
         </div>
 
-        <!-- ROUTINE MATIN — medium -->
-        <div class="cell routine-cell">
-          <div class="cell-head">
-            <h3>☀ Matin</h3>
-            <span class="pill" id="routine-am-pill"></span>
-          </div>
-          <ul class="routine-list" id="routine-am"></ul>
-        </div>
-
-        <!-- ROUTINE SOIR — medium -->
-        <div class="cell routine-cell">
-          <div class="cell-head">
-            <h3>☾ Soir</h3>
-            <span class="pill" id="routine-pm-pill"></span>
-          </div>
-          <ul class="routine-list" id="routine-pm"></ul>
-        </div>
-
         <!-- CALENDRIER SEMAINE — wide -->
         <div class="cell week-cell">
           <div class="cell-head">
@@ -204,15 +186,15 @@
           <div class="week-grid" id="week-grid"></div>
         </div>
 
-        <!-- INBOX / CAPTURE RAPIDE — wide -->
+        <!-- CAPTURE RAPIDE (envoie dans Univers) — wide -->
         <div class="cell inbox-cell">
           <div class="cell-head">
-            <h3>Inbox</h3>
-            <span class="muted">Capture rapide — idées, notes, à trier plus tard</span>
+            <h3>Capture rapide</h3>
+            <span class="muted">→ envoie dans ton Univers</span>
           </div>
           <div class="row-input">
-            <input id="inbox-input" type="text" placeholder="Tape une idée, n'importe quoi…" maxlength="200" autocomplete="off">
-            <button class="btn-circle btn-accent" id="btn-add-inbox" title="Capturer">＋</button>
+            <input id="inbox-input" type="text" placeholder="Tape une idée, une note, n'importe quoi…" maxlength="200" autocomplete="off">
+            <button class="btn-circle btn-accent" id="btn-add-inbox" title="Envoyer">＋</button>
           </div>
           <ul id="inbox-list" class="item-list inbox-items"></ul>
         </div>
@@ -252,14 +234,24 @@
           <div id="finance-stats" class="finance-stats"></div>
         </div>
 
+        <!-- ÉPARGNE — focus du user -->
+        <div class="cell wide savings-cell">
+          <div class="cell-head">
+            <h3>💰 Mon épargne</h3>
+            <span class="muted" id="savings-stats-lbl"></span>
+          </div>
+          <div id="savings-content"></div>
+        </div>
+
         <div class="cell">
           <div class="cell-head"><h3>Nouvelle transaction</h3></div>
           <div class="tx-add">
             <input id="tx-desc" type="text" placeholder="Description…" maxlength="60" autocomplete="off">
             <input id="tx-amt"  type="number" placeholder="0.00" min="0" step="0.01" inputmode="decimal">
             <div class="tx-buttons">
-              <button class="btn-red"   id="btn-expense" title="Dépense">−</button>
-              <button class="btn-green" id="btn-income"  title="Revenu">＋</button>
+              <button class="btn-red"    id="btn-expense" title="Dépense">−</button>
+              <button class="btn-savings" id="btn-savings" title="Mettre de côté">💰</button>
+              <button class="btn-green"  id="btn-income"  title="Revenu">＋</button>
             </div>
           </div>
         </div>
@@ -283,9 +275,42 @@
     </section>
 
 
-    <!-- ─────────────────────────────────────── VIEW : BIEN-ÊTRE -->
+    <!-- ─────────────────────────────────────── VIEW : SANTÉ -->
     <section class="view" id="view-wellness" hidden>
       <div class="bento bento-wellness">
+
+        <!-- Séances de sport combat -->
+        <div class="cell wide sport-cell">
+          <div class="cell-head">
+            <h3>Séances de sport</h3>
+            <span class="muted" id="sport-stats-lbl"></span>
+          </div>
+          <div class="sport-add-row">
+            <select id="sport-type" class="reward-select">
+              <option value="Boxe">🥊 Boxe</option>
+              <option value="MMA">🥋 MMA</option>
+              <option value="Muay thaï">🦵 Muay thaï</option>
+              <option value="Kickboxing">👊 Kickboxing</option>
+              <option value="Jiu-jitsu">🥋 Jiu-jitsu</option>
+              <option value="Lutte">🤼 Lutte</option>
+              <option value="Sparring">🤛 Sparring</option>
+              <option value="Technique">📐 Technique</option>
+              <option value="Cardio">🏃 Cardio</option>
+              <option value="Musculation">💪 Musculation</option>
+              <option value="Autre">Autre</option>
+            </select>
+            <input type="number" id="sport-duration" placeholder="min" min="5" max="300" inputmode="numeric">
+            <select id="sport-intensity" class="reward-select" style="max-width:120px">
+              <option value="1">🟢 Cool</option>
+              <option value="2">🔵 Light</option>
+              <option value="3" selected>🟡 Solid</option>
+              <option value="4">🟠 Hard</option>
+              <option value="5">🔴 Crush</option>
+            </select>
+            <button class="btn-save-round" id="btn-add-sport" title="Ajouter">✓</button>
+          </div>
+          <ul id="sport-list" class="item-list"></ul>
+        </div>
 
         <div class="cell">
           <div class="cell-head">
@@ -319,6 +344,19 @@
           </div>
           <svg id="weight-chart" class="weight-svg" viewBox="0 0 200 55" preserveAspectRatio="none"></svg>
           <div class="weight-axis" id="weight-axis"></div>
+        </div>
+
+        <!-- Gratitude du soir -->
+        <div class="cell wide gratitude-cell">
+          <div class="cell-head">
+            <h3>Gratitude du soir</h3>
+            <span class="muted">3 trucs pour quoi t'es reconnaissant aujourd'hui</span>
+          </div>
+          <div class="gratitude-rows">
+            <input type="text" id="grat-1" placeholder="1." maxlength="120">
+            <input type="text" id="grat-2" placeholder="2." maxlength="120">
+            <input type="text" id="grat-3" placeholder="3." maxlength="120">
+          </div>
         </div>
 
         <div class="cell wide">
@@ -423,22 +461,80 @@
     </section>
 
 
-    <!-- ─────────────────────────────────────── VIEW : JOURNAL -->
-    <section class="view" id="view-journal" hidden>
-      <div class="bento bento-journal">
-        <div class="cell wide journal-main">
-          <div class="cell-head">
-            <h3 id="journal-date-lbl"></h3>
-            <div class="journal-nav">
-              <button class="ghost-btn" id="journal-prev" title="Précédent">←</button>
-              <button class="ghost-btn" id="journal-next" title="Suivant">→</button>
+    <!-- ─────────────────────────────────────── VIEW : UNIVERS -->
+    <section class="view view-fullscreen" id="view-universe" hidden>
+      <div class="universe-toolbar">
+        <div class="universe-search">
+          <input id="universe-search" type="text" placeholder="🔍 Chercher dans ton univers…" maxlength="60">
+        </div>
+        <div class="universe-actions">
+          <button class="ghost-btn" id="universe-add-star">＋ Étoile</button>
+          <button class="ghost-btn" id="universe-add-planet">＋ Planète</button>
+          <button class="ghost-btn" id="universe-fit">↻ Centrer</button>
+        </div>
+      </div>
+
+      <div class="universe-canvas-wrap">
+        <svg id="universe-canvas" class="universe-canvas" preserveAspectRatio="xMidYMid meet">
+          <defs>
+            <radialGradient id="sunGrad" cx="0.5" cy="0.5" r="0.5">
+              <stop offset="0%"  stop-color="#FFFBEB"/>
+              <stop offset="45%" stop-color="#FCD34D"/>
+              <stop offset="100%" stop-color="#F59E0B"/>
+            </radialGradient>
+            <radialGradient id="sunGlow" cx="0.5" cy="0.5" r="0.5">
+              <stop offset="0%"   stop-color="#FCD34D" stop-opacity="0.55"/>
+              <stop offset="60%"  stop-color="#F59E0B" stop-opacity="0.15"/>
+              <stop offset="100%" stop-color="#F59E0B" stop-opacity="0"/>
+            </radialGradient>
+            <filter id="nodeGlow" x="-50%" y="-50%" width="200%" height="200%">
+              <feGaussianBlur stdDeviation="3" result="blur"/>
+              <feMerge>
+                <feMergeNode in="blur"/>
+                <feMergeNode in="SourceGraphic"/>
+              </feMerge>
+            </filter>
+          </defs>
+          <g id="universe-stars-bg"></g>
+          <g id="universe-orbits"></g>
+          <g id="universe-links"></g>
+          <g id="universe-nodes"></g>
+        </svg>
+
+        <!-- Panneau d'édition à droite (s'ouvre quand on tap un node) -->
+        <aside class="universe-panel" id="universe-panel" hidden>
+          <div class="universe-panel-head">
+            <input id="up-label" type="text" placeholder="Nom" maxlength="40">
+            <button class="icon-btn" id="up-close" title="Fermer">×</button>
+          </div>
+          <div class="universe-panel-meta">
+            <div class="universe-panel-row">
+              <label>Type</label>
+              <select id="up-type">
+                <option value="planet">🪐 Planète (catégorie)</option>
+                <option value="star">✦ Étoile (idée / note)</option>
+                <option value="moon">🌙 Lune (sous-idée)</option>
+              </select>
+            </div>
+            <div class="universe-panel-row">
+              <label>Couleur</label>
+              <div class="universe-colors" id="up-colors"></div>
+            </div>
+            <div class="universe-panel-row">
+              <label>Rattaché à</label>
+              <select id="up-parent">
+                <option value="">— rien —</option>
+              </select>
             </div>
           </div>
-          <textarea id="journal-text" class="journal-area"
-                    placeholder="Quelques mots sur ta journée…"
+          <textarea id="up-content" class="universe-textarea"
+                    placeholder="Note libre, idées, liens [[autre étoile]]…"
                     maxlength="2000"></textarea>
-          <div class="muted" id="journal-chars">0 / 2000</div>
-        </div>
+          <div class="universe-panel-foot">
+            <button class="btn-ghost-modal" id="up-delete">Supprimer</button>
+            <button class="btn-primary-modal" id="up-save">Sauver</button>
+          </div>
+        </aside>
       </div>
     </section>
 
