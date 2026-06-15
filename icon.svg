@@ -1,69 +1,23 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024">
   <defs>
-    <!-- Fond aurora plein bord (iOS appliquera son propre masque squircle) -->
-    <linearGradient id="bg" x1="0" y1="0" x2="0.85" y2="1">
-      <stop offset="0%"   stop-color="#1E1B4B"/>
-      <stop offset="35%"  stop-color="#4338CA"/>
-      <stop offset="70%"  stop-color="#7C3AED"/>
-      <stop offset="100%" stop-color="#DB2777"/>
+    <linearGradient id="bg" x1="0" y1="1" x2="1" y2="0">
+      <stop offset="0%"   stop-color="#DB2777"/>
+      <stop offset="50%"  stop-color="#7C3AED"/>
+      <stop offset="100%" stop-color="#5E5CE6"/>
     </linearGradient>
-
-    <radialGradient id="sun" cx="0.5" cy="0.45" r="0.6">
-      <stop offset="0%"   stop-color="#FFFBEB"/>
-      <stop offset="45%"  stop-color="#FCD34D"/>
-      <stop offset="100%" stop-color="#F59E0B"/>
-    </radialGradient>
-
-    <radialGradient id="glow" cx="0.5" cy="0.5" r="0.5">
-      <stop offset="0%"   stop-color="#FCD34D" stop-opacity="0.55"/>
-      <stop offset="60%"  stop-color="#F59E0B" stop-opacity="0.15"/>
-      <stop offset="100%" stop-color="#F59E0B" stop-opacity="0"/>
-    </radialGradient>
-
     <linearGradient id="topGloss" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0%"   stop-color="#FFFFFF" stop-opacity="0.25"/>
-      <stop offset="45%"  stop-color="#FFFFFF" stop-opacity="0.04"/>
+      <stop offset="0%"   stop-color="#FFFFFF" stop-opacity="0.18"/>
       <stop offset="100%" stop-color="#FFFFFF" stop-opacity="0"/>
     </linearGradient>
-
-    <linearGradient id="line" x1="0" y1="0" x2="1" y2="0">
-      <stop offset="0%"   stop-color="#FFFFFF" stop-opacity="0"/>
-      <stop offset="50%"  stop-color="#FFFFFF" stop-opacity="1"/>
-      <stop offset="100%" stop-color="#FFFFFF" stop-opacity="0"/>
-    </linearGradient>
-
-    <radialGradient id="bottomDarken" cx="0.5" cy="1" r="0.7">
-      <stop offset="0%"   stop-color="#000000" stop-opacity="0.18"/>
-      <stop offset="100%" stop-color="#000000" stop-opacity="0"/>
-    </radialGradient>
   </defs>
 
-  <!-- Aurora background — PLEIN BORD (pas de padding pour iOS) -->
   <rect width="1024" height="1024" fill="url(#bg)"/>
 
-  <!-- Étoiles -->
-  <circle cx="160" cy="175" r="8"   fill="#FFFFFF" opacity="0.9"/>
-  <circle cx="245" cy="115" r="5"   fill="#FFFFFF" opacity="0.7"/>
-  <circle cx="780" cy="160" r="8"   fill="#FFFFFF" opacity="0.85"/>
-  <circle cx="880" cy="265" r="5"   fill="#FFFFFF" opacity="0.6"/>
-  <circle cx="110" cy="310" r="5"   fill="#FFFFFF" opacity="0.5"/>
-  <circle cx="930" cy="120" r="4"   fill="#FFFFFF" opacity="0.5"/>
+  <circle cx="512" cy="512" r="300" fill="none" stroke="#FFFFFF" stroke-opacity="0.22" stroke-width="46"/>
 
-  <!-- Soleil + halo (centré, sous l'horizon) -->
-  <circle cx="512" cy="700" r="480" fill="url(#glow)"/>
-  <circle cx="512" cy="700" r="300" fill="url(#glow)"/>
-  <circle cx="512" cy="700" r="220" fill="url(#sun)"/>
-  <!-- Highlight soleil -->
-  <ellipse cx="460" cy="640" rx="70" ry="44" fill="#FFFFFF" opacity="0.45"/>
+  <path d="M320 512 H452 L508 372 L600 660 L644 512 H704"
+        fill="none" stroke="#FFFFFF" stroke-width="54"
+        stroke-linecap="round" stroke-linejoin="round"/>
 
-  <!-- 3 lignes horizon -->
-  <rect x="110" y="765" width="804" height="18" rx="9" fill="url(#line)" opacity="0.95"/>
-  <rect x="180" y="820" width="664" height="14" rx="7" fill="url(#line)" opacity="0.60"/>
-  <rect x="260" y="870" width="504" height="10" rx="5" fill="url(#line)" opacity="0.35"/>
-
-  <!-- Assombrissement bas -->
-  <rect width="1024" height="1024" fill="url(#bottomDarken)"/>
-
-  <!-- Reflet glassmorphism en haut -->
-  <rect width="1024" height="450" fill="url(#topGloss)"/>
+  <rect width="1024" height="470" fill="url(#topGloss)"/>
 </svg>

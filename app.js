@@ -64,10 +64,6 @@ function defaultState() {
     notifs:   [],          // [{ id, text, hour, minute, days:[0-6], enabled }]
     sportSessions: [],     // [{id, date, type, duration, intensity, notes}]
     gratitude: [],         // [{date, items: [str, str, str]}]
-    universe: {            // Système solaire
-      nodes: [],           // [{id, label, type, color, x, y, content, parent}]
-      links: []            // [{from, to}]
-    },
     rewards:  [
       { id: 'rw1', emoji: '🍕', label: 'Cheat meal',          target: 7,  tracker: 'global_streak',  claimed: 0, history: [] },
       { id: 'rw2', emoji: '🎮', label: '2h gaming',           target: 10, tracker: 'week_focus',     claimed: 0, history: [] },
@@ -255,7 +251,6 @@ function mergeStates(remote, local) {
     notifs:     mergeByKey(remote.notifs    || [], local.notifs    || [], 'id', localNewer),
     sportSessions: mergeByKey(remote.sportSessions || [], local.sportSessions || [], 'id', localNewer),
     gratitude:  mergeByKey(remote.gratitude || [], local.gratitude || [], 'date', localNewer),
-    universe:   localNewer ? (local.universe || {nodes:[],links:[]}) : (remote.universe || {nodes:[],links:[]}),
     routines:   mergeRoutines(remote.routines || {}, local.routines || {}, localNewer),
     _mt: Math.max(remote._mt || 0, local._mt || 0)
   };
@@ -635,8 +630,6 @@ function addInbox() {
   if (!text) return;
   state.inbox = state.inbox || [];
   state.inbox.push({ id: uid(), text, date: todayStr() });
-  // Envoie aussi vers l'Univers : crée une étoile flottante autour de "Idées"
-  try { captureToUniverse(text); } catch {}
   save(); renderInbox(); inp.value = ''; inp.focus();
 }
 
@@ -1996,391 +1989,6 @@ function initRewards() {
   if (modal) modal.onclick = e => { if (e.target === modal) closeRewardModal(); };
 }
 
-// ═══════════════════════════════════════════════════════════════════════════
-// UNIVERS — système solaire mental interactif
-// ═══════════════════════════════════════════════════════════════════════════
-
-const UNIVERSE_COLORS = [
-  '#FCD34D', // soleil
-  '#FF453A', '#FF6482', '#FF9F0A',
-  '#FFD60A', '#30D158', '#64D2FF',
-  '#5E5CE6', '#BF5AF2', '#FF2D55'
-];
-
-const UNIVERSE_TYPES = {
-  core:   { radius: 38, label: 'Soleil' },
-  planet: { radius: 26, label: 'Planète' },
-  star:   { radius: 18, label: 'Étoile' },
-  moon:   { radius: 12, label: 'Lune' }
-};
-
-let universeSel    = null;   // node id sélectionné
-let universeDrag   = null;   // {nodeId, dx, dy}
-let universePan    = { x: 0, y: 0, zoom: 1 };
-let universePanDrag = null;  // {x0, y0}
-let universeBgStars = null;  // cache des étoiles de fond
-
-function ensureUniverse() {
-  if (!state.universe || !state.universe.nodes) {
-    state.universe = { nodes: [], links: [] };
-  }
-  // Crée le soleil central "Moi" si l'univers est vide
-  if (state.universe.nodes.length === 0) {
-    state.universe.nodes.push({
-      id: 'u-core', label: 'Moi', type: 'core',
-      color: '#FCD34D', x: 0, y: 0, content: ''
-    });
-    // Planètes par défaut
-    const angles = [0, 60, 120, 180, 240, 300];
-    const planetsDefault = [
-      { label: 'Sport',    color: '#FF453A' },
-      { label: 'Famille',  color: '#FF6482' },
-      { label: 'Boulot',   color: '#5E5CE6' },
-      { label: 'Idées',    color: '#BF5AF2' },
-      { label: 'Projets',  color: '#30D158' },
-      { label: 'Persos',   color: '#64D2FF' }
-    ];
-    planetsDefault.forEach((p, i) => {
-      const angle = (angles[i] * Math.PI) / 180;
-      state.universe.nodes.push({
-        id: 'u-' + uid(),
-        label: p.label,
-        type: 'planet',
-        color: p.color,
-        x: Math.cos(angle) * 200,
-        y: Math.sin(angle) * 200,
-        content: '',
-        parent: 'u-core'
-      });
-    });
-  }
-}
-
-function renderBgStars() {
-  const bg = document.getElementById('universe-stars-bg');
-  if (!bg) return;
-  if (universeBgStars) { bg.innerHTML = universeBgStars; return; }
-  let s = '';
-  for (let i = 0; i < 80; i++) {
-    const x = (Math.random() - .5) * 1600;
-    const y = (Math.random() - .5) * 1200;
-    const r = Math.random() * 1.4 + .4;
-    const delay = (Math.random() * 3).toFixed(2);
-    s += `<circle class="bg-star" cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="${r.toFixed(2)}" style="animation-delay:${delay}s"/>`;
-  }
-  universeBgStars = s;
-  bg.innerHTML = s;
-}
-
-function renderOrbits() {
-  const orbits = document.getElementById('universe-orbits');
-  if (!orbits) return;
-  // Cercle d'orbite pour chaque planète (autour du parent)
-  const nodes = state.universe.nodes;
-  const nodeById = new Map(nodes.map(n => [n.id, n]));
-  let s = '';
-  for (const n of nodes) {
-    if (!n.parent) continue;
-    const p = nodeById.get(n.parent);
-    if (!p) continue;
-    const dx = n.x - p.x;
-    const dy = n.y - p.y;
-    const r = Math.hypot(dx, dy);
-    if (r > 0) {
-      s += `<circle class="orbit-ring" cx="${p.x}" cy="${p.y}" r="${r.toFixed(1)}"/>`;
-    }
-  }
-  orbits.innerHTML = s;
-}
-
-function renderLinks() {
-  const linksEl = document.getElementById('universe-links');
-  if (!linksEl) return;
-  const nodes = state.universe.nodes;
-  const nodeById = new Map(nodes.map(n => [n.id, n]));
-  let s = '';
-  for (const link of (state.universe.links || [])) {
-    const a = nodeById.get(link.from);
-    const b = nodeById.get(link.to);
-    if (a && b) {
-      s += `<line class="universe-link" x1="${a.x}" y1="${a.y}" x2="${b.x}" y2="${b.y}"/>`;
-    }
-  }
-  // Plus les liens implicites parent-enfant
-  for (const n of nodes) {
-    if (!n.parent) continue;
-    const p = nodeById.get(n.parent);
-    if (p) s += `<line class="universe-link" x1="${p.x}" y1="${p.y}" x2="${n.x}" y2="${n.y}" stroke-opacity=".15"/>`;
-  }
-  linksEl.innerHTML = s;
-}
-
-function renderUniverseNodes() {
-  const wrap = document.getElementById('universe-nodes');
-  if (!wrap) return;
-  const nodes = state.universe.nodes;
-  wrap.innerHTML = nodes.map(n => {
-    const cfg = UNIVERSE_TYPES[n.type] || UNIVERSE_TYPES.star;
-    const isSel = n.id === universeSel ? ' selected' : '';
-    const labelTrunc = n.label.length > 18 ? n.label.slice(0,16) + '…' : n.label;
-    return `<g class="u-node ${n.type}${isSel}"
-               data-id="${n.id}"
-               transform="translate(${n.x}, ${n.y})"
-               style="color:${n.color}">
-      ${n.type === 'core' ? `<circle r="${cfg.radius + 18}" fill="url(#sunGlow)"/>` : ''}
-      <circle r="${cfg.radius}" fill="${n.type === 'core' ? 'url(#sunGrad)' : n.color}" filter="url(#nodeGlow)"/>
-      <text dy="${cfg.radius + 14}">${esc(labelTrunc)}</text>
-    </g>`;
-  }).join('');
-}
-
-function renderUniverse() {
-  ensureUniverse();
-  applyUniverseTransform();
-  renderBgStars();
-  renderOrbits();
-  renderLinks();
-  renderUniverseNodes();
-  attachUniverseHandlers();
-}
-
-function applyUniverseTransform() {
-  const svg = document.getElementById('universe-canvas');
-  if (!svg) return;
-  const rect = svg.getBoundingClientRect();
-  const w = rect.width || 1000;
-  const h = rect.height || 700;
-  // viewBox centré sur le pan, taille selon le zoom
-  const vw = w / universePan.zoom;
-  const vh = h / universePan.zoom;
-  svg.setAttribute('viewBox', `${universePan.x - vw/2} ${universePan.y - vh/2} ${vw} ${vh}`);
-}
-
-function attachUniverseHandlers() {
-  const wrap = document.getElementById('universe-nodes');
-  if (!wrap) return;
-
-  wrap.querySelectorAll('.u-node').forEach(g => {
-    g.onpointerdown = (e) => {
-      e.preventDefault();
-      e.stopPropagation();
-      const id = g.dataset.id;
-      const node = state.universe.nodes.find(n => n.id === id);
-      if (!node) return;
-      universeSel = id;
-      // Position curseur en coords SVG
-      const pt = svgPoint(e);
-      universeDrag = { nodeId: id, dx: pt.x - node.x, dy: pt.y - node.y, moved: false };
-      g.setPointerCapture && g.setPointerCapture(e.pointerId);
-    };
-    g.onpointermove = (e) => {
-      if (!universeDrag || universeDrag.nodeId !== g.dataset.id) return;
-      const pt = svgPoint(e);
-      const node = state.universe.nodes.find(n => n.id === universeDrag.nodeId);
-      if (!node) return;
-      const nx = pt.x - universeDrag.dx;
-      const ny = pt.y - universeDrag.dy;
-      if (Math.abs(nx - node.x) > 2 || Math.abs(ny - node.y) > 2) universeDrag.moved = true;
-      node.x = nx;
-      node.y = ny;
-      g.setAttribute('transform', `translate(${nx}, ${ny})`);
-      renderOrbits();
-      renderLinks();
-    };
-    g.onpointerup = (e) => {
-      const moved = universeDrag && universeDrag.moved;
-      const id = universeDrag && universeDrag.nodeId;
-      universeDrag = null;
-      if (moved) {
-        save();
-        renderUniverseNodes();
-        attachUniverseHandlers();
-      } else if (id) {
-        // Click sur node : ouvrir panneau
-        openUniversePanel(id);
-      }
-    };
-  });
-
-  // Pan du canvas (drag du fond)
-  const svg = document.getElementById('universe-canvas');
-  if (svg) {
-    svg.onpointerdown = (e) => {
-      if (e.target.closest('.u-node')) return;
-      universePanDrag = { x0: e.clientX, y0: e.clientY, panX0: universePan.x, panY0: universePan.y };
-    };
-    svg.onpointermove = (e) => {
-      if (!universePanDrag) return;
-      const dx = (e.clientX - universePanDrag.x0) / universePan.zoom;
-      const dy = (e.clientY - universePanDrag.y0) / universePan.zoom;
-      universePan.x = universePanDrag.panX0 - dx;
-      universePan.y = universePanDrag.panY0 - dy;
-      applyUniverseTransform();
-    };
-    svg.onpointerup = () => { universePanDrag = null; };
-    svg.onwheel = (e) => {
-      e.preventDefault();
-      const factor = e.deltaY < 0 ? 1.12 : 0.89;
-      universePan.zoom = Math.max(.4, Math.min(2.5, universePan.zoom * factor));
-      applyUniverseTransform();
-    };
-  }
-}
-
-function svgPoint(e) {
-  const svg = document.getElementById('universe-canvas');
-  if (!svg) return { x: 0, y: 0 };
-  const pt = svg.createSVGPoint();
-  pt.x = e.clientX; pt.y = e.clientY;
-  return pt.matrixTransform(svg.getScreenCTM().inverse());
-}
-
-function openUniversePanel(id) {
-  const panel = document.getElementById('universe-panel');
-  if (!panel) return;
-  const n = state.universe.nodes.find(x => x.id === id);
-  if (!n) return;
-  universeSel = id;
-  panel.hidden = false;
-  document.getElementById('up-label').value = n.label;
-  document.getElementById('up-type').value  = n.type;
-  document.getElementById('up-content').value = n.content || '';
-
-  // Couleurs
-  const colorsEl = document.getElementById('up-colors');
-  colorsEl.innerHTML = UNIVERSE_COLORS.map(c =>
-    `<div class="u-color${c === n.color ? ' sel' : ''}" style="background:${c}" data-color="${c}"></div>`
-  ).join('');
-  colorsEl.querySelectorAll('.u-color').forEach(el => {
-    el.onclick = () => {
-      colorsEl.querySelectorAll('.u-color').forEach(x => x.classList.remove('sel'));
-      el.classList.add('sel');
-    };
-  });
-
-  // Parent select
-  const parentSel = document.getElementById('up-parent');
-  parentSel.innerHTML = '<option value="">— rien —</option>' +
-    state.universe.nodes.filter(x => x.id !== n.id).map(x =>
-      `<option value="${x.id}"${x.id === n.parent ? ' selected' : ''}>${esc(x.label)}</option>`
-    ).join('');
-
-  renderUniverseNodes();
-}
-
-function closeUniversePanel() {
-  document.getElementById('universe-panel').hidden = true;
-  universeSel = null;
-  renderUniverseNodes();
-}
-
-function saveUniverseNode() {
-  if (!universeSel) return;
-  const n = state.universe.nodes.find(x => x.id === universeSel);
-  if (!n) return;
-  n.label = document.getElementById('up-label').value.trim() || n.label;
-  n.type  = document.getElementById('up-type').value;
-  n.content = document.getElementById('up-content').value;
-  const colorSel = document.querySelector('#up-colors .u-color.sel');
-  if (colorSel) n.color = colorSel.dataset.color;
-  const parentVal = document.getElementById('up-parent').value;
-  n.parent = parentVal || null;
-  save();
-  renderUniverse();
-  closeUniversePanel();
-}
-
-function deleteUniverseNode() {
-  if (!universeSel) return;
-  if (universeSel === 'u-core') { alert('Tu peux pas supprimer ton centre.'); return; }
-  if (!confirm('Supprimer cette étoile et ce qui s\'y rattache ?')) return;
-  const toDelete = new Set([universeSel]);
-  // Supprime aussi les enfants directs
-  state.universe.nodes.forEach(n => { if (n.parent === universeSel) toDelete.add(n.id); });
-  state.universe.nodes = state.universe.nodes.filter(n => !toDelete.has(n.id));
-  state.universe.links = (state.universe.links || []).filter(l =>
-    !toDelete.has(l.from) && !toDelete.has(l.to)
-  );
-  save();
-  renderUniverse();
-  closeUniversePanel();
-}
-
-function addUniverseNode(type) {
-  // Ajout aléatoire autour du soleil ou du node sélectionné
-  const parent = universeSel
-    ? state.universe.nodes.find(n => n.id === universeSel)
-    : state.universe.nodes.find(n => n.type === 'core');
-  const angle = Math.random() * 2 * Math.PI;
-  const radius = type === 'planet' ? 240 : type === 'star' ? 130 : 60;
-  const node = {
-    id: 'u-' + uid(),
-    label: type === 'planet' ? 'Nouvelle planète' : 'Nouvelle étoile',
-    type,
-    color: UNIVERSE_COLORS[1 + Math.floor(Math.random() * 8)],
-    x: (parent ? parent.x : 0) + Math.cos(angle) * radius,
-    y: (parent ? parent.y : 0) + Math.sin(angle) * radius,
-    content: '',
-    parent: parent ? parent.id : null
-  };
-  state.universe.nodes.push(node);
-  save();
-  renderUniverse();
-  openUniversePanel(node.id);
-}
-
-function fitUniverse() {
-  universePan = { x: 0, y: 0, zoom: 1 };
-  applyUniverseTransform();
-}
-
-function captureToUniverse(text) {
-  // Quand on ajoute une note via "Capture rapide" : crée une étoile dans Idées
-  ensureUniverse();
-  const ideas = state.universe.nodes.find(n => n.label === 'Idées') ||
-                state.universe.nodes.find(n => n.type === 'core');
-  const angle = Math.random() * 2 * Math.PI;
-  const radius = 80;
-  const node = {
-    id: 'u-' + uid(),
-    label: text.length > 30 ? text.slice(0, 28) + '…' : text,
-    type: 'star',
-    color: UNIVERSE_COLORS[3 + Math.floor(Math.random() * 6)],
-    x: (ideas ? ideas.x : 0) + Math.cos(angle) * radius,
-    y: (ideas ? ideas.y : 0) + Math.sin(angle) * radius,
-    content: text,
-    parent: ideas ? ideas.id : null
-  };
-  state.universe.nodes.push(node);
-  save();
-}
-
-function initUniverse() {
-  const addStar = document.getElementById('universe-add-star');
-  const addPlanet = document.getElementById('universe-add-planet');
-  const fit = document.getElementById('universe-fit');
-  const close = document.getElementById('up-close');
-  const saveBtn = document.getElementById('up-save');
-  const delBtn = document.getElementById('up-delete');
-  if (addStar)  addStar.onclick  = () => addUniverseNode('star');
-  if (addPlanet) addPlanet.onclick = () => addUniverseNode('planet');
-  if (fit) fit.onclick = fitUniverse;
-  if (close) close.onclick = closeUniversePanel;
-  if (saveBtn) saveBtn.onclick = saveUniverseNode;
-  if (delBtn) delBtn.onclick = deleteUniverseNode;
-
-  const search = document.getElementById('universe-search');
-  if (search) search.oninput = (e) => {
-    const q = e.target.value.toLowerCase().trim();
-    if (!q) { renderUniverseNodes(); attachUniverseHandlers(); return; }
-    document.querySelectorAll('#universe-nodes .u-node').forEach(g => {
-      const id = g.dataset.id;
-      const n = state.universe.nodes.find(x => x.id === id);
-      const match = n && ((n.label||'').toLowerCase().includes(q) || (n.content||'').toLowerCase().includes(q));
-      g.style.opacity = match ? '1' : '0.2';
-    });
-  };
-}
 
 // ═══════════════════════════════════════════════════════════════════════════
 // SPORT SESSIONS (combat)
@@ -2863,7 +2471,6 @@ function renderAll() {
   renderNotifs();
   renderHeatmap();
   renderRecap();
-  renderUniverse();
 }
 
 // ── Service Worker ────────────────────────────────────────────────────────
@@ -2904,7 +2511,6 @@ document.addEventListener('DOMContentLoaded', async () => {
   state.countdowns = state.countdowns || [];
   state.sportSessions = state.sportSessions || [];
   state.gratitude  = state.gratitude  || [];
-  state.universe   = state.universe   || { nodes: [], links: [] };
   // Si pas de rewards (premier lancement après mise à jour), seeder les defaults
   if (!state.rewards || !state.rewards.length) {
     state.rewards = defaultState().rewards;
@@ -2929,7 +2535,6 @@ document.addEventListener('DOMContentLoaded', async () => {
   initRewards();
   initNotifs();
   initStats();
-  initUniverse();
 
   // Migration manquante : notifs
   state.notifs = state.notifs || [];
